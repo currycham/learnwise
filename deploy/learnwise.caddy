@@ -1,0 +1,18 @@
+# LearnWise 站点：由 setup-server.sh 复制到 /etc/caddy/learnwise.caddy，并在主 Caddyfile 里 import
+# Caddy 会自动申请和续期 HTTPS 证书（前提：DNS 已解析到本机，80/443 端口已放行）
+learnwise.waywise.tech {
+	encode zstd gzip
+
+	request_body {
+		max_size 1MB
+	}
+
+	reverse_proxy 127.0.0.1:8400
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}

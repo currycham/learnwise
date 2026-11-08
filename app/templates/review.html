@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}复习 · LearnWise{% endblock %}
+{% block mainclass %}narrow{% endblock %}
+{% block head %}<style>
+.ans{display:none;background:var(--bg);border-radius:8px;padding:10px 14px;margin:10px 0;white-space:pre-wrap}
+.rate{display:none;gap:8px;flex-wrap:wrap}
+.open .ans{display:block}.open .rate{display:flex}.open .show{display:none}
+</style>{% endblock %}
+{% block body %}
+<h1 style="font-size:26px;margin-bottom:4px">今天的复习</h1>
+<p class="muted small" style="margin:0 0 16px">先在心里回答，再点开对照，然后诚实地评一下。答得好的，下次隔得更久；没想起来的，明天再见。不同知识点的卡片穿插着出，这比一个一个知识点复习记得更牢。</p>
+{% if cards %}
+<div class="card" id="box"></div>
+{% else %}
+<div class="card" style="text-align:center">
+  <p style="margin:0 0 6px"><b>今天没有要复习的。</b></p>
+  <p class="muted small" style="margin:0">{% if total %}一共 {{ total }} 张卡片{% if next_due %}，下一张在 {{ next_due[:10] }} 到期{% endif %}。{% else %}学习页里每块的回忆题，点开对照、评过之后就会进到这里。{% endif %}</p>
+  <p style="margin:12px 0 0"><a href="/">去学点新的</a></p>
+</div>
+{% endif %}
+{% endblock %}
+{% block script %}<script>
+const CARDS = {{ cards|tojson }};
+const box = document.getElementById('box');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let i = 0, done = 0;
+function show() {
+  if (!box) return;
+  if (i >= CARDS.length) { box.innerHTML = `<div style="text-align:center"><p><b>复习完了，${done} 张。</b></p><p class="muted small">明天见。</p><a href="/">回首页</a></div>`; return; }
+  const c = CARDS[i];
+  box.className = 'card';
+  box.innerHTML = `<div class="small muted">${i + 1} / ${CARDS.length} · ${esc(c.domain)} › <a href="/p/${c.page_id}" target="_blank">${esc(c.concept)}</a></div>
+    <p style="font-weight:600;font-size:17px;margin:8px 0;white-space:pre-wrap">${esc(c.q)}</p>
+    <button class="btn ghost show" type="button">点开对照</button>
+    <div class="ans">${esc(c.a)}</div>
+    <div class="rate"><button class="btn" data-r="good">答上来了</button><button class="btn ghost" data-r="hard">模糊</button><button class="btn ghost" data-r="again">没想起来</button></div>`;
+  box.querySelector('.show').onclick = () => box.classList.add('open');
+  box.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => {
+    const buttons = box.querySelectorAll('[data-r]');
+    buttons.forEach(button => button.disabled = true);
+    try { await api(`/api/cards/${c.id}/review`, { rating: b.dataset.r }); done++; i++; show(); }
+    catch (x) { alert(x.message); buttons.forEach(button => button.disabled = false); }
+  });
+}
+show();
+</script>{% endblock %}

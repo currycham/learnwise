@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · 生成中 · LearnWise{% endblock %}
+{% block mainclass %}narrow{% endblock %}
+{% block body %}
+<div class="card" style="margin-top:30px;text-align:center" id="box">
+  <h1 style="font-size:24px;margin-bottom:12px">{{ title }}</h1>
+  <div id="busy" {% if error %}style="display:none"{% endif %}>
+    <div class="spinner" style="margin:18px auto"></div>
+    <p style="margin:0">正在生成{{ what }}，{{ eta }}。</p>
+    <p class="muted small" id="st" style="margin:6px 0 0">可以先离开，生成好了它会一直在这里。</p>
+  </div>
+  <div id="fail" {% if not error %}style="display:none"{% endif %}>
+    <p style="color:var(--bad)" id="msg">{{ error }}</p>
+    {% if user %}<button class="btn" id="retry" type="button">重试</button>
+    {% else %}<a class="btn" href="/login?next={{ request.url.path|urlencode }}{% if request.url.query %}%3F{{ request.url.query|urlencode }}{% endif %}">登录后重试</a>{% endif %}
+  </div>
+  {% if back %}<p style="margin-top:18px"><a href="{{ back }}">← 回到地图</a></p>{% endif %}
+</div>
+{% if kind == 'page' %}
+<div class="card" style="margin-top:14px">
+  <p style="margin:0 0 6px"><b>等的时候，先做一件事：</b></p>
+  <p class="muted" style="margin:0">关于「{{ title.split('（')[0] }}」，你现在知道些什么？在脑子里或纸上写下三句话。学完之后再回来对照——提前调动已有的知识，新东西更容易挂上去。</p>
+</div>
+{% endif %}
+{% endblock %}
+{% block script %}<script>
+const kind = {{ kind|tojson }}, ref = {{ ref }};
+const busy = document.getElementById('busy'), fail = document.getElementById('fail'), st = document.getElementById('st');
+let t0 = Date.now();
+async function poll() {
+  try {
+    const response = await fetch(`/api/status/${kind}/${ref}`);
+    if (!response.ok) throw new Error('状态暂时无法获取');
+    const r = await response.json();
+    if (r.status === 'ready') { location.reload(); return; }
+    if (r.status === 'failed') { busy.style.display = 'none'; fail.style.display = 'block'; document.getElementById('msg').textContent = r.error || '生成失败'; return; }
+    const s = Math.round((Date.now() - t0) / 1000);
+    st.textContent = r.paused ? '今天的生成额度已用完，后台会在明天额度恢复后继续。可以先学习已经生成的页面。' :
+      r.running ? `正在生成，已等待 ${s} 秒。可以先离开，稍后回来继续。` :
+      r.ahead ? `排队中，前面还有 ${r.ahead} 个任务。可以先离开，稍后回来继续。` : '已排队，等待后台开始。可以先离开，稍后回来继续。';
+  } catch { st.textContent = '暂时连接不上，正在自动重连。无需重新生成。'; }
+  setTimeout(poll, 3000);
+}
+if (!fail.style.display || fail.style.display === 'none') poll();
+document.getElementById('retry')?.addEventListener('click', async () => {
+  try { await api(`/api/retry/${kind}/${ref}`); busy.style.display = 'block'; fail.style.display = 'none'; t0 = Date.now(); poll(); }
+  catch (x) { document.getElementById('msg').textContent = x.message; }
+});
+</script>{% endblock %}

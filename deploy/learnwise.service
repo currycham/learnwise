@@ -1,0 +1,20 @@
+[Unit]
+Description=LearnWise（FastAPI：网站、接口、后台生成任务）
+After=network.target
+
+[Service]
+Type=simple
+User=learnwise
+Group=learnwise
+WorkingDirectory=/srv/learnwise/app
+Environment=DB_PATH=/srv/learnwise/data/learnwise.db
+Environment=TZ=Asia/Shanghai
+# 只监听本机，由 Caddy 对外提供 HTTPS；生成任务队列在进程内运行，必须只有 1 个 worker
+ExecStart=/srv/learnwise/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8400 --workers 1 --proxy-headers
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

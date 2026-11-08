@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}后台 · LearnWise{% endblock %}
+{% block body %}
+<h1 style="font-size:26px">后台</h1>
+<div class="grid" style="margin-top:14px">
+  <div class="card"><div class="small muted">用户</div><b style="font-size:26px">{{ stats.users }}</b></div>
+  <div class="card"><div class="small muted">领域 / 学习页</div><b style="font-size:26px">{{ stats.domains }} / {{ stats.pages }}</b></div>
+  <div class="card"><div class="small muted">今天花费 / 累计（元）</div><b style="font-size:26px">{{ stats.today }} / {{ stats.total }}</b></div>
+</div>
+
+<h2 class="sec">近 7 天按环节</h2>
+<div class="card"><table><tr><th>环节</th><th>次数</th><th>花费（元）</th></tr>
+{% for t in by_task %}<tr><td>{{ t.task }}</td><td>{{ t.n }}</td><td>{{ t.cost }}</td></tr>{% endfor %}</table></div>
+
+<h2 class="sec">最近的任务</h2>
+<div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>类型</th><th>对象</th><th>状态</th><th>花费</th><th>开始 / 结束（UTC）</th><th>错误</th></tr>
+{% for j in recent %}<tr><td>{{ j.id }}</td><td>{{ j.kind }}</td><td>{{ j.label or j.ref_id }}</td>
+<td style="color:{{ 'var(--bad)' if j.status == 'failed' else 'inherit' }}">{{ j.status }}</td><td>{{ j.cost or '' }}</td>
+<td class="small">{{ (j.started_at or '')[5:16] }} → {{ (j.finished_at or '')[11:16] }}</td><td class="small muted">{{ (j.error or '')[:160] }}</td></tr>{% endfor %}</table></div>
+
+<h2 class="sec">最近的学习页</h2>
+<div class="card" style="overflow-x:auto"><table><tr><th>#</th><th>领域</th><th>知识点</th><th>档位</th><th>质检分</th><th>问题数</th><th>已修正</th><th>浏览</th><th></th></tr>
+{% for p in pages_q %}<tr><td>{{ p.id }}</td><td>{{ p.domain }}</td><td><a href="/p/{{ p.id }}">{{ p.name }}</a></td><td>{{ p.level }}</td>
+<td>{{ p.score if p.score is not none else '' }}</td><td>{{ p.issues }}</td><td>{{ '是' if p.revised else '' }}</td><td>{{ p.views }}</td>
+<td><a href="#" onclick="if(confirm('重新生成这一页？生成期间这一页打不开。'))api('/api/admin/pages/{{ p.id }}/regenerate').then(()=>location.reload());return false">重新生成</a></td></tr>{% endfor %}</table></div>
+
+<h2 class="sec">内容反馈</h2>
+<div class="card">{% for f in fb %}<p style="margin:0 0 8px"><a href="/p/{{ f.page_id }}">页 {{ f.page_id }}</a> · <span class="small muted">{{ f.email or '游客' }} · {{ f.created_at }}</span><br>{{ f.text }}</p>{% else %}<p class="muted" style="margin:0">还没有。</p>{% endfor %}</div>
+{% endblock %}

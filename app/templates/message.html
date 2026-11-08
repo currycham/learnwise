@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · LearnWise{% endblock %}
+{% block mainclass %}narrow{% endblock %}
+{% block body %}
+<div class="card" style="margin-top:30px;text-align:center">
+  <h1 style="font-size:24px;margin-bottom:10px">{{ title }}</h1>
+  <p class="muted">{{ message }}</p>
+  {% if action %}<a class="btn" href="{{ action[1] }}">{{ action[0] }}</a>{% else %}<a href="/">回首页</a>{% endif %}
+</div>
+{% endblock %}

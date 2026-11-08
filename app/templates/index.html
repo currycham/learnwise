@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block head %}<style>
+.hero{text-align:center;padding:30px 0 10px}
+.hero h1{font-size:40px;margin-bottom:8px}
+.hero h1 b{color:var(--accent)}
+.hero p{color:var(--muted);margin:0 auto 22px;max-width:560px}
+.ask{max-width:620px;margin:0 auto;text-align:left}
+.ask .big{font-size:18px;padding:14px 16px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:3px 12px;font-size:14px;cursor:pointer;color:var(--muted)}
+.chips button:hover{border-color:var(--accent);color:var(--accent)}
+.how{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:36px}
+.how div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.how b{display:block;margin-bottom:4px}
+.how span{font-size:14px;color:var(--muted);line-height:1.6;display:block}
+@media (max-width:700px){.how{grid-template-columns:1fr 1fr}.hero h1{font-size:30px}}
+</style>{% endblock %}
+{% block body %}
+<section class="hero">
+  <h1>想学什么，都可以<b>系统</b>地学</h1>
+  <p>输入一个领域，LearnWise 先画出它的知识地图、看看你在哪，再为每个知识点生成一页 30 分钟的学习页：先猜、精学、回忆、闯关、讲给别人听，学完按遗忘曲线提醒复习。</p>
+  <form class="ask" id="ask">
+    <input class="input big" id="topic" maxlength="60" placeholder="我想学……（比如：博弈论、Python、摄影构图、宏观经济学）" autocomplete="off" required>
+    <div class="row" style="margin-top:10px">
+      <input class="input" id="goal" maxlength="100" placeholder="学它是为了……（可选，比如：看懂财经新闻）" style="flex:1;min-width:200px">
+      <button class="btn" id="go" type="submit">开始</button>
+    </div>
+    <p class="err" id="err"></p>
+  </form>
+  <div class="chips">{% for t in ["博弈论", "概率论", "Python 编程", "认知心理学", "摄影", "宏观经济学", "西方哲学", "机器学习"] %}<button type="button">{{ t }}</button>{% endfor %}</div>
+</section>
+
+{% if mine %}
+<h2 class="sec">我在学的</h2>
+<div class="grid">{% for m in mine %}
+  <a class="dcard" href="/d/{{ m.id }}"><b>{{ m.name }}</b>
+    <span class="sum">{% if m.status != 'ready' %}{{ '地图生成中…' if m.status == 'pending' else '生成失败，点进去重试' }}{% else %}点亮 {{ m.lit }} / {{ m.nodes }}{% if m.label %} · {{ m.label }}{% endif %}{% endif %}</span>
+    {% if m.nodes %}<div class="meter"><i style="width:{{ (m.lit / m.nodes * 100)|round }}%"></i></div>{% endif %}</a>
+{% endfor %}</div>
+{% endif %}
+
+<h2 class="sec" style="display:flex;justify-content:space-between;align-items:baseline">大家在学的领域 <a href="/graph" style="font-size:15px;font-family:var(--f-body)">看全站知识星图 →</a></h2>
+{% if domains %}
+<div class="grid">{% for d in domains %}
+  <a class="dcard" href="/d/{{ d.id }}"><span class="cat">{{ d.category }}</span><b>{{ d.name }}</b><span class="sum">{{ d.summary }}</span>
+    <span class="small muted">{{ d.nodes }} 个知识点 · {{ d.pages }} 页已生成</span></a>
+{% endfor %}</div>
+{% else %}<p class="muted">还没有。输入你想学的第一个领域吧。</p>{% endif %}
+
+<div class="how">
+  <div><b>① 画地图</b><span>把领域拆成 14–24 个知识点，标出谁是谁的前置。</span></div>
+  <div><b>② 找位置</b><span>自选水平，或做 9 道诊断题，地图上标出你已经会的。</span></div>
+  <div><b>③ 学一页</b><span>每页 30 分钟：故事、先猜、精学、练习、闯关、费曼讲解。</span></div>
+  <div><b>④ 点亮它</b><span>闯关及格就点亮这个知识点，回忆题按遗忘曲线安排复习。</span></div>
+</div>
+{% endblock %}
+{% block script %}<script>
+const f = document.getElementById('ask'), err = document.getElementById('err'), go = document.getElementById('go');
+const draftKey = 'learnwise:topic-draft', topic = document.getElementById('topic'), goal = document.getElementById('goal');
+try {
+  const draft = JSON.parse(sessionStorage.getItem(draftKey) || 'null');
+  if (draft && Date.now() - draft.at < 24 * 60 * 60 * 1000) {
+    topic.value = String(draft.topic || '').slice(0, 60); goal.value = String(draft.goal || '').slice(0, 100);
+  }
+} catch {}
+function saveDraft() {
+  try { sessionStorage.setItem(draftKey, JSON.stringify({topic: topic.value, goal: goal.value, at: Date.now()})); } catch {}
+}
+f.addEventListener('input', saveDraft);
+document.querySelectorAll('.chips button').forEach(b => b.onclick = () => { document.getElementById('topic').value = b.textContent; document.getElementById('topic').focus(); });
+f.onsubmit = async e => {
+  e.preventDefault(); err.textContent = ''; saveDraft();
+  {% if not user %}location.href = '/login?next=/'; return;{% endif %}
+  go.disabled = true; go.textContent = '理解中…';
+  try {
+    const j = await api('/api/domains', { topic: document.getElementById('topic').value, goal: document.getElementById('goal').value });
+    try { sessionStorage.removeItem(draftKey); } catch {}
+    location.href = j.url;
+  } catch (x) { err.textContent = x.message; go.disabled = false; go.textContent = '开始'; }
+};
+</script>{% endblock %}

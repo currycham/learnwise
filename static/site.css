@@ -1,0 +1,60 @@
+:root{
+  --bg:#F5F3EE; --surface:#FDFCF9; --ink:#1D2130; --muted:#626879; --line:#DCD7CB;
+  --accent:#3549A3; --accent-ink:#FFFFFF; --accent-soft:#E2E6F5;
+  --glow:#C98A12; --glow-soft:#F6E6C2;
+  --ok:#2D7A4E; --ok-soft:#DCEEE2; --bad:#AE4038; --bad-soft:#F5DEDB;
+  --f-display:"Songti SC","STSong","Noto Serif CJK SC","Source Han Serif SC","SimSun",serif;
+  --f-body:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12141B; --surface:#1A1D27; --ink:#E3E5EC; --muted:#9AA0B2; --line:#2E3242;
+  --accent:#8E9EF0; --accent-ink:#11142A; --accent-soft:#252C4D;
+  --glow:#F0B54A; --glow-soft:#3B2F17;
+  --ok:#62C48A; --ok-soft:#173225; --bad:#EE8379; --bad-soft:#3D1F1C;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 var(--f-body);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--f-display);line-height:1.35;margin:0}
+.top{border-bottom:1px solid var(--line);background:var(--bg)}
+.top-in{max-width:1000px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px}
+.brand{font-weight:700;font-size:17px;text-decoration:none;color:var(--ink);margin-right:auto}
+.brand b{color:var(--accent)}
+.top a.nav{font-size:14px;color:var(--muted);text-decoration:none}
+.top a.nav:hover{color:var(--ink)}
+.badge{display:inline-block;min-width:18px;padding:0 6px;border-radius:99px;background:var(--glow);color:#1D1606;font-size:12px;text-align:center;line-height:18px}
+main{max-width:1000px;margin:0 auto;padding:28px 16px 60px}
+.narrow{max-width:640px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:8px 18px;cursor:pointer;font-size:15px;text-decoration:none;line-height:1.5}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 12px}
+.input:focus,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.err{color:var(--bad);font-size:14px;min-height:1.4em}
+.pill{display:inline-block;font-size:12px;padding:1px 9px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.dcard{display:flex;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;text-decoration:none;color:inherit}
+.dcard:hover{border-color:var(--accent)}
+.dcard b{font-size:18px;font-family:var(--f-display)}
+.dcard .cat{font-size:12px;color:var(--accent)}
+.dcard .sum{font-size:14px;color:var(--muted);line-height:1.6}
+.meter{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;background:var(--glow)}
+h2.sec{font-size:20px;margin:34px 0 12px}
+.foot{font-size:13px;color:var(--muted);text-align:center;padding:30px 16px;line-height:2}
+.foot a{color:inherit}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+.spinner{width:36px;height:36px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (max-width:560px){.top a.nav.hide-m{display:none}.card{padding:16px}}
+@media (max-width:560px){.top-in{gap:10px;flex-wrap:wrap}.top a.nav{min-height:44px;display:inline-flex;align-items:center}.btn{min-height:44px}.grid{grid-template-columns:minmax(0,1fr)}main{overflow-wrap:anywhere}.lvl button{min-height:44px}}

@@ -1,0 +1,11 @@
+#!/bin/sh
+# 每天在线热备份 SQLite（账号、领域地图、学习页、进度、复习卡片、AI 调用记账），保留 14 天。由 setup-server.sh 安装到 /etc/cron.daily/
+set -e
+DIR=/srv/learnwise/backup
+DB=/srv/learnwise/data/learnwise.db
+[ -f "$DB" ] || exit 0
+mkdir -p "$DIR"
+sqlite3 "$DB" ".backup '$DIR/learnwise-$(date +%F).db'"
+gzip -f "$DIR/learnwise-$(date +%F).db"
+find "$DIR" -name 'learnwise-*.db.gz' -mtime +14 -delete
+chown -R learnwise:learnwise "$DIR"

@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+{% block title %}知识星图 · LearnWise{% endblock %}
+{% block desc %}LearnWise 上所有领域的知识点连成的一张 3D 星图：每个领域是一个星团，不同领域里结构相同、互相用到的想法用光带连起来。{% endblock %}
+{% block mainclass %}full{% endblock %}
+{% block head %}<style>
+main.full{max-width:none;padding:0}
+.foot{display:none}
+.gw{position:relative;height:calc(100dvh - 53px);min-height:480px;background:#04060D;overflow:hidden;color:#E6E8F2}
+.gw:fullscreen{height:100vh}
+#cv{position:absolute;inset:0;touch-action:none}
+#cv canvas{display:block}
+.lbls{position:absolute;inset:0;pointer-events:none;z-index:1}   /* 自成层叠上下文：CSS2DRenderer 会给每个标签设 z-index，不能盖住面板 */
+.lbl{font:12px "PingFang SC","Microsoft YaHei",sans-serif;color:#D6DAEA;text-shadow:0 0 4px #04060D,0 0 8px #04060D;white-space:nowrap;transition:opacity .25s;pointer-events:none}
+.lbl.hub{font-size:15px;font-weight:700;color:#fff;letter-spacing:.04em;text-shadow:0 0 10px rgba(0,0,0,.9),0 0 18px var(--c)}
+.lbl.lit{color:#FFE3A1}
+.lbl.off{opacity:0}
+.ov{position:absolute;z-index:2}
+.hud{top:14px;left:14px;max-width:min(360px,calc(100% - 28px));background:rgba(12,16,32,.72);backdrop-filter:blur(8px);border:1px solid rgba(140,160,255,.14);border-radius:14px;padding:12px 14px;box-shadow:0 0 30px rgba(80,100,255,.08)}
+.hud h1{font-size:20px;color:#fff;margin:0;letter-spacing:.06em}
+.hud .st{font-size:12px;color:#9AA3C0;margin:2px 0 8px;font-variant-numeric:tabular-nums}
+.hud input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 10px;color:#fff;font-size:14px}
+.hud input::placeholder{color:#7C84A3}
+.sr{margin-top:4px;max-height:200px;overflow-y:auto}
+.sr button{display:block;width:100%;text-align:left;background:none;border:0;color:#D6DAEA;font-size:14px;padding:4px 6px;border-radius:6px;cursor:pointer}
+.sr button:hover{background:rgba(255,255,255,.08)}
+.sr small{color:#7C84A3}
+.ft{display:none;background:none;border:0;color:#9DB4FF;font-size:13px;padding:6px 0 0;cursor:pointer}
+.tg{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tg label{font-size:12px;display:flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;border:1px solid rgba(255,255,255,.14);cursor:pointer;user-select:none;color:#C9CEE2}
+.tg input{display:none}
+.tg label:has(input:not(:checked)){opacity:.4}
+.tg i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.lg{left:14px;bottom:14px;max-width:min(560px,calc(100% - 90px));display:flex;flex-wrap:wrap;gap:6px}
+.lg button{font-size:12px;background:rgba(12,16,32,.7);border:1px solid rgba(255,255,255,.1);color:#C9CEE2;border-radius:99px;padding:2px 10px;cursor:pointer;display:flex;align-items:center;gap:5px}
+.lg button:hover{border-color:rgba(255,255,255,.35)}
+.lg button i{width:8px;height:8px;border-radius:50%}
+.zm{right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px}
+.zm button{width:36px;height:36px;border-radius:10px;background:rgba(12,16,32,.75);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:16px;cursor:pointer}
+.zm button.on{border-color:#7FA6FF;color:#7FA6FF;box-shadow:0 0 10px rgba(127,166,255,.35)}
+.panel{top:14px;right:14px;width:350px;max-height:calc(100% - 28px);overflow-y:auto;background:rgba(10,14,30,.86);backdrop-filter:blur(10px);border:1px solid rgba(140,160,255,.16);border-radius:14px;padding:16px 18px;display:none;font-size:14px;line-height:1.65;box-shadow:0 0 40px rgba(60,80,200,.15)}
+.panel.on{display:block}
+.panel h2{font-size:22px;color:#fff;margin:0 0 4px}
+.panel .x{position:absolute;top:8px;right:10px;background:none;border:0;color:#9AA3C0;font-size:20px;cursor:pointer}
+.panel .sub{color:#9AA3C0;font-size:13px}
+.panel h4{font-size:12px;color:#9AA3C0;margin:14px 0 6px;letter-spacing:.05em;font-weight:600}
+.panel a{color:#9DB4FF}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:13px;padding:2px 10px;border-radius:99px;background:rgba(255,255,255,.07);margin:0 6px 6px 0;text-decoration:none;color:#E6E8F2 !important;border:0;cursor:pointer}
+.chip i{width:8px;height:8px;border-radius:50%}
+.lk{border-left:2px solid;padding:2px 0 2px 10px;margin-bottom:10px}
+.lk .t{font-size:11px;font-weight:700;margin-right:4px}
+.lk button{background:none;border:0;color:#fff;font-weight:600;padding:0;cursor:pointer;font-size:14px}
+.lk .w{color:#B8BED6;font-size:13px}
+.go{display:inline-block;margin-top:12px;background:#5C74F0;color:#fff !important;text-decoration:none;border-radius:8px;padding:6px 14px;box-shadow:0 0 16px rgba(92,116,240,.45)}
+.tip{position:absolute;z-index:3;pointer-events:none;background:rgba(8,10,22,.92);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 10px;font-size:13px;max-width:260px;display:none;color:#E6E8F2}
+.tip b{color:#fff}
+.center-msg{top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#9AA3C0}
+.hint{right:64px;bottom:18px;font-size:12px;color:#6F7896;pointer-events:none}
+@media (max-width:700px){
+  .hud input{font-size:16px}.sr button,.ft,.zm button,.panel .x{min-height:44px;min-width:44px}.panel{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .panel{top:auto;bottom:0;right:0;left:0;width:auto;max-height:55%;border-radius:14px 14px 0 0}
+  .hud{padding:10px 12px}
+  .hud h1{font-size:17px}
+  .ft{display:block}
+  .tg{display:none}
+  .tg.open{display:flex}
+  .lg,.hint{display:none}
+}
+</style>
+<script type="importmap">{"imports":{"three":"/static/vendor/three/three.module.js","three/addons/":"/static/vendor/three/addons/"}}</script>
+{% endblock %}
+{% block body %}
+<div class="gw" id="gw">
+  <div id="cv"></div>
+  <div class="ov hud">
+    <h1>知识星图</h1>
+    <div class="st" id="st">正在点亮星空…</div>
+    <input id="q" placeholder="找一个知识点或领域" autocomplete="off">
+    <div class="sr" id="sr"></div>
+    <button class="ft" id="ft" type="button">筛选联系类型</button>
+    <div class="tg" id="tg">
+      <label><input type="checkbox" data-t="类比" checked><i style="background:#F6C15B"></i>类比</label>
+      <label><input type="checkbox" data-t="应用" checked><i style="background:#5FD6A4"></i>应用</label>
+      <label><input type="checkbox" data-t="基础" checked><i style="background:#7FA6FF"></i>基础</label>
+      <label><input type="checkbox" data-t="对比" checked><i style="background:#F2808C"></i>对比</label>
+      <label><input type="checkbox" data-t="前置"><i style="background:#8A90A8"></i>领域内前置</label>
+      <label id="mine-t" style="display:none"><input type="checkbox" data-t="mine" checked><i style="background:#FFD166"></i>我点亮的</label>
+    </div>
+  </div>
+  <div class="ov lg" id="lg"></div>
+  <div class="ov hint">拖动旋转 · 滚轮缩放 · 右键平移 · 点星星看联系</div>
+  <div class="ov zm">
+    <button id="b-tour" class="on" title="自动环绕巡游">⟳</button>
+    <button id="b-fit" title="回到全景">⤢</button>
+    <button id="b-full" title="全屏">⛶</button>
+  </div>
+  <div class="ov panel" id="panel"><button class="x" id="px">×</button><div id="pc"></div></div>
+  <div class="tip" id="tip"></div>
+</div>
+{% endblock %}
+{% block script %}<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+const PAL = ['#7AA2FF', '#F6C15B', '#6FD3A8', '#F27D8A', '#B58CFF', '#4FD1E0', '#F59E5B', '#A3E36B', '#FF8FD1', '#C7D0E8', '#D08C60', '#5FB8FF'];
+const TYPE_C = { '类比': '#F6C15B', '应用': '#5FD6A4', '基础': '#7FA6FF', '对比': '#F2808C', '前置': '#8A90A8' };
+const STAGES = ['入门', '进阶', '深入'];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const gw = document.getElementById('gw'), host = document.getElementById('cv');
+const tip = document.getElementById('tip'), panel = document.getElementById('panel'), pc = document.getElementById('pc');
+const MOBILE = gw.clientWidth < 700;
+const show = { '类比': true, '应用': true, '基础': true, '对比': true, '前置': false, mine: true };
+let G, N = [], byKey = new Map(), springs = [], sel = null, hover = null, focusSet = null;
+
+// ---------- 渲染器 ----------
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+} catch {
+  gw.insertAdjacentHTML('beforeend', '<div class="ov center-msg">你的浏览器不支持 WebGL，星图显示不了。<br>换个浏览器，或在电脑上打开试试。</div>');
+  throw new Error('no webgl');
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MOBILE ? 1.5 : 2));
+renderer.setClearColor(0x04060D);
+host.appendChild(renderer.domElement);
+const labels = new CSS2DRenderer();
+labels.domElement.className = 'lbls';
+gw.insertBefore(labels.domElement, host.nextSibling);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x04060D);   // 用 scene.background 而不是 clearColor：经过后期处理时 clearColor 不做色彩空间转换，背景会发灰
+scene.fog = new THREE.FogExp2(0x04060D, 0.00028);
+const camera = new THREE.PerspectiveCamera(50, 1, 1, 12000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.07;
+controls.autoRotate = true; controls.autoRotateSpeed = 0.45;
+controls.minDistance = 30; controls.maxDistance = 5000;
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 1.05, 0.5, 0.18);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+function resize() {
+  const w = gw.clientWidth, h = gw.clientHeight;
+  renderer.setSize(w, h); composer.setSize(w, h); labels.setSize(w, h);
+  bloom.resolution.set(MOBILE ? w / 2 : w, MOBILE ? h / 2 : h);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// 柔光贴图：光晕、光粒子共用
+const DOT = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.25, 'rgba(255,255,255,.75)'); r.addColorStop(.6, 'rgba(255,255,255,.18)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+
+// 星空背景
+(() => {
+  const n = MOBILE ? 1500 : 3500, pos = new Float32Array(n * 3), col = new Float32Array(n * 3), c = new THREE.Color();
+  for (let i = 0; i < n; i++) {
+    const r = 2600 + Math.random() * 3600, th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
+    pos.set([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th)], i * 3);
+    c.setHSL(.55 + Math.random() * .2, .5, .55 + Math.random() * .35); col.set([c.r, c.g, c.b], i * 3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const m = new THREE.PointsMaterial({ size: 1.6, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: .5, fog: false, depthWrite: false });
+  scene.add(new THREE.Points(g, m));
+})();
+
+fetch('/api/graph').then(r => r.json()).then(init).catch(e => { console.error(e); document.getElementById('st').textContent = '载入失败，刷新试试'; });
+
+// ---------- 布局：三维力导向，开场前算好 ----------
+function layout() {
+  const n = N.length;
+  for (let it = 0, alpha = 1; it < 320; it++, alpha *= .985) {
+    for (let i = 0; i < n; i++) {
+      const a = N[i];
+      for (let j = i + 1; j < n; j++) {
+        const b = N[j];
+        let dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 > 1440000) continue;
+        if (d2 < 1) { dx = Math.random() - .5; dy = Math.random() - .5; dz = Math.random() - .5; d2 = 1; }
+        const d = Math.sqrt(d2), f = alpha * Math.sqrt(a.charge * b.charge) / d2;
+        const fx = dx / d * f, fy = dy / d * f, fz = dz / d * f;
+        a.vx -= fx / a.mass; a.vy -= fy / a.mass; a.vz -= fz / a.mass;
+        b.vx += fx / b.mass; b.vy += fy / b.mass; b.vz += fz / b.mass;
+      }
+    }
+    for (const s of springs) {
+      const dx = s.b.x - s.a.x, dy = s.b.y - s.a.y, dz = s.b.z - s.a.z, d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+      const f = (d - s.len) * s.k * alpha, fx = dx / d * f, fy = dy / d * f, fz = dz / d * f;
+      s.a.vx += fx / s.a.mass; s.a.vy += fy / s.a.mass; s.a.vz += fz / s.a.mass;
+      s.b.vx -= fx / s.b.mass; s.b.vy -= fy / s.b.mass; s.b.vz -= fz / s.b.mass;
+    }
+    for (const a of N) {
+      a.vx -= a.x * .003 * alpha; a.vy -= a.y * .003 * alpha; a.vz -= a.z * .003 * alpha;
+      a.vx *= .6; a.vy *= .6; a.vz *= .6; a.x += a.vx; a.y += a.vy; a.z += a.vz;
+    }
+  }
+}
+
+// ---------- 建场景 ----------
+const nodeGeo = new THREE.SphereGeometry(1, 24, 16);
+function init(g) {
+  G = g;
+  const color = {};
+  g.domains.forEach((d, i) => color[d.id] = PAL[i % PAL.length]);
+  G.color = color;
+  const D = Math.max(1, g.domains.length), R = 280 * Math.cbrt(D) + 80;
+  g.domains.forEach((d, i) => {   // 领域均匀撒在球面上（斐波那契球）
+    const y = D > 1 ? 1 - (i / (D - 1)) * 2 : 0, rr = Math.sqrt(1 - y * y), th = i * 2.39996;
+    const n = { key: 'd' + d.id, kind: 'd', id: d.id, name: d.name, d, x: Math.cos(th) * rr * R, y: y * R * .7, z: Math.sin(th) * rr * R,
+      vx: 0, vy: 0, vz: 0, r: 7 + Math.sqrt(d.size) * 1.3, color: color[d.id], charge: 7000, mass: 8, links: [] };
+    N.push(n); byKey.set(n.key, n);
+  });
+  const lit = new Set(g.mine.lit), known = new Set(g.mine.known);
+  g.nodes.forEach(c => {
+    const h = byKey.get('d' + c.domains[0]);
+    const n = { key: 'c' + c.id, kind: 'c', id: c.id, name: c.name, c, x: h.x + (Math.random() - .5) * 120, y: h.y + (Math.random() - .5) * 120, z: h.z + (Math.random() - .5) * 120,
+      vx: 0, vy: 0, vz: 0, r: 2.8 + Math.min(3, c.pages * .9) + (c.domains.length > 1 ? 1 : 0), color: color[c.domains[0]], charge: 140, mass: 1,
+      lit: lit.has(c.id), known: known.has(c.id), links: [] };
+    N.push(n); byKey.set(n.key, n);
+    c.domains.forEach(did => springs.push({ a: byKey.get('d' + did), b: n, len: 40 + c.stage * 30, k: .09, kind: 'm' }));
+  });
+  g.prereq.forEach(([s, t]) => { const a = byKey.get('c' + s), b = byKey.get('c' + t); if (a && b) springs.push({ a, b, len: 22, k: .03, kind: '前置' }); });
+  g.links.forEach(l => {
+    const a = byKey.get('c' + l.src), b = byKey.get('c' + l.dst);
+    if (!a || !b) return;
+    const s = { a, b, len: 320, k: .0015 + .001 * l.strength, kind: l.type, l };
+    springs.push(s); a.links.push(s); b.links.push(s);
+  });
+  layout();
+  buildObjects();
+  document.getElementById('st').textContent = `${g.domains.length} 个领域 · ${g.nodes.length} 颗知识星 · ${g.links.length} 条跨领域光带`;
+  if (g.loggedIn && (g.mine.lit.length || g.mine.known.length)) document.getElementById('mine-t').style.display = '';
+  document.getElementById('lg').innerHTML = g.domains.map(d => `<button data-d="${d.id}"><i style="background:${color[d.id]}"></i>${esc(d.name)}</button>`).join('');
+  document.querySelectorAll('#lg button').forEach(b => b.onclick = () => select(byKey.get('d' + b.dataset.d), true));
+  if (!g.domains.length) gw.insertAdjacentHTML('beforeend', '<div class="ov center-msg">星空还是空的。<br><a href="/" style="color:#9DB4FF">去建第一个领域</a></div>');
+  fitView(false);
+  const qs = new URLSearchParams(location.search);
+  const pre = qs.get('c') ? byKey.get('c' + qs.get('c')) : qs.get('d') ? byKey.get('d' + qs.get('d')) : null;
+  if (pre) setTimeout(() => select(pre, true), 400);
+  animate();
+}
+
+let linkObjs = [], memberLines, prereqLines, particles, partData = [];
+function buildObjects() {
+  for (const n of N) {
+    n.pos = new THREE.Vector3(n.x, n.y, n.z);
+    const col = new THREE.Color(n.lit && show.mine ? '#FFD166' : n.color);
+    const core = new THREE.Mesh(nodeGeo, new THREE.MeshBasicMaterial({ color: n.kind === 'd' ? col.clone().lerp(new THREE.Color('#fff'), .35) : col, transparent: true }));
+    core.scale.setScalar(n.r * .55);
+    core.position.copy(n.pos);
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: DOT, color: col, transparent: true, opacity: n.kind === 'd' ? .75 : .55, blending: THREE.AdditiveBlending, depthWrite: false }));
+    halo.scale.setScalar(n.kind === 'd' ? n.r * 6 : n.r * (n.lit ? 7 : 4.2));
+    halo.position.copy(n.pos);
+    scene.add(core, halo);
+    n.core = core; n.halo = halo; n.baseHalo = halo.material.opacity; n.baseScale = halo.scale.x;
+    const el = document.createElement('div');
+    el.className = 'lbl' + (n.kind === 'd' ? ' hub' : ' off') + (n.lit ? ' lit' : '');
+    el.textContent = n.name;
+    if (n.kind === 'd') el.style.setProperty('--c', n.color);
+    const lb = new CSS2DObject(el);
+    lb.center.set(.5, n.kind === 'd' ? 2.2 : -0.9);
+    lb.position.copy(n.pos);
+    scene.add(lb);
+    n.label = lb; n.el = el;
+  }
+  // 归属线：领域中心 → 它的知识点
+  const mp = [], mc = [];
+  for (const s of springs) if (s.kind === 'm') {
+    const c = new THREE.Color(s.a.color);
+    mp.push(s.a.x, s.a.y, s.a.z, s.b.x, s.b.y, s.b.z); mc.push(c.r, c.g, c.b, c.r * .4, c.g * .4, c.b * .4);
+  }
+  memberLines = segments(mp, mc, .16);
+  const pp = [], pcol = [];
+  for (const s of springs) if (s.kind === '前置') { pp.push(s.a.x, s.a.y, s.a.z, s.b.x, s.b.y, s.b.z); pcol.push(.55, .58, .68, .55, .58, .68); }
+  prereqLines = segments(pp, pcol, .35); prereqLines.visible = show['前置'];
+  // 跨领域光带：向外拱起的弧线 + 沿线流动的光粒子
+  for (const s of springs) {
+    if (!s.l) continue;
+    const a = s.a.pos, b = s.b.pos, mid = a.clone().add(b).multiplyScalar(.5);
+    const out = mid.clone().normalize().multiplyScalar(a.distanceTo(b) * .28 + 20);
+    s.curve = new THREE.QuadraticBezierCurve3(a, mid.add(out), b);
+    const geo = new THREE.BufferGeometry().setFromPoints(s.curve.getPoints(48));
+    const mat = new THREE.LineBasicMaterial({ color: TYPE_C[s.kind], transparent: true, opacity: .2 + s.l.strength * .08, blending: THREE.AdditiveBlending, depthWrite: false });
+    s.line = new THREE.Line(geo, mat); s.baseOp = mat.opacity;
+    scene.add(s.line); linkObjs.push(s);
+    for (let i = 0; i < 1 + s.l.strength; i++) partData.push({ s, t: Math.random(), v: .0016 + Math.random() * .0016 + s.l.strength * .0004 });
+  }
+  const n = partData.length, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+  partData.forEach((p, i) => { const c = new THREE.Color(TYPE_C[p.s.kind]); col.set([c.r * 1.6, c.g * 1.6, c.b * 1.6], i * 3); });
+  const pg = new THREE.BufferGeometry();
+  pg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); pg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  particles = new THREE.Points(pg, new THREE.PointsMaterial({ size: MOBILE ? 7 : 9, map: DOT, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  particles.frustumCulled = false;
+  scene.add(particles);
+}
+function segments(p, c, op) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(c, 3));
+  const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false }));
+  l.userData.base = op; scene.add(l); return l;
+}
+
+// ---------- 高亮 ----------
+function neighborhood(n) {
+  const s = new Set([n.key]);
+  if (n.kind === 'd') { N.forEach(m => m.kind === 'c' && m.c.domains.includes(n.id) && s.add(m.key)); return s; }
+  n.c.domains.forEach(d => s.add('d' + d));
+  for (const sp of springs) {
+    if (sp.kind === 'm' || (sp.l && !show[sp.kind])) continue;
+    if (sp.a === n) s.add(sp.b.key); if (sp.b === n) s.add(sp.a.key);
+  }
+  return s;
+}
+function applyFocus() {
+  const f = focusSet;
+  for (const n of N) {
+    const on = !f || f.has(n.key);
+    n.core.material.opacity = on ? 1 : .05;
+    n.halo.material.opacity = on ? n.baseHalo : .015;
+  }
+  for (const s of linkObjs) {
+    s.line.visible = show[s.kind];
+    s.line.material.opacity = !f ? s.baseOp : (f.has(s.a.key) && f.has(s.b.key) ? 1 : .025);
+  }
+  memberLines.material.opacity = f ? .05 : memberLines.userData.base;
+  prereqLines.visible = show['前置'];
+  prereqLines.material.opacity = f ? .06 : .35;
+}
+function setLit() {
+  for (const n of N) {
+    if (n.kind !== 'c') continue;
+    const c = new THREE.Color(n.lit && show.mine ? '#FFD166' : n.color);
+    n.core.material.color.copy(c); n.halo.material.color.copy(c);
+    n.halo.scale.setScalar(n.lit && show.mine ? n.r * 7 : n.r * 4.2); n.baseScale = n.halo.scale.x;
+  }
+}
+
+// ---------- 相机 ----------
+let fly = null;
+function flyTo(target, dist, ms = 1100) {
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  fly = { t0: performance.now(), ms, p0: camera.position.clone(), q0: controls.target.clone(), p1: target.clone().add(dir.multiplyScalar(dist)), q1: target.clone() };
+}
+function fitView(animate = true) {
+  let r = 0; N.forEach(n => r = Math.max(r, Math.hypot(n.x, n.y, n.z)));
+  const d = Math.max(260, r * 2.1) * (MOBILE ? 1.4 : 1);
+  if (!animate) { camera.position.set(d * .2, d * .35, d); controls.target.set(0, 0, 0); return; }
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  fly = { t0: performance.now(), ms: 1200, p0: camera.position.clone(), q0: controls.target.clone(), p1: dir.multiplyScalar(d), q1: new THREE.Vector3() };
+}
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const tourBtn = document.getElementById('b-tour');
+function setTour(on) { controls.autoRotate = on; tourBtn.classList.toggle('on', on); }
+tourBtn.onclick = () => setTour(!controls.autoRotate);
+document.getElementById('b-fit').onclick = () => { select(null); fitView(); };
+document.getElementById('b-full').onclick = () => { document.fullscreenElement ? document.exitFullscreen() : gw.requestFullscreen?.(); };
+document.addEventListener('fullscreenchange', () => setTimeout(resize, 50));
+controls.addEventListener('start', () => { setTour(false); fly = null; });
+
+// ---------- 每帧 ----------
+const clock = new THREE.Clock();
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  if (fly) {
+    const k = Math.min(1, (performance.now() - fly.t0) / fly.ms), e = ease(k);
+    camera.position.lerpVectors(fly.p0, fly.p1, e); controls.target.lerpVectors(fly.q0, fly.q1, e);
+    if (k >= 1) fly = null;
+  }
+  controls.update();
+  // 光粒子沿光带流动（应用、基础按方向流）
+  const arr = particles.geometry.attributes.position.array;
+  partData.forEach((p, i) => {
+    const vis = show[p.s.kind] && (!focusSet || (focusSet.has(p.s.a.key) && focusSet.has(p.s.b.key)));
+    if (!vis) { arr[i * 3] = arr[i * 3 + 1] = arr[i * 3 + 2] = 1e6; return; }
+    p.t = (p.t + p.v) % 1;
+    const v = p.s.curve.getPoint(p.t);
+    arr[i * 3] = v.x; arr[i * 3 + 1] = v.y; arr[i * 3 + 2] = v.z;
+  });
+  particles.geometry.attributes.position.needsUpdate = true;
+  // 呼吸：领域中心和点亮的星
+  for (const n of N) {
+    if (n.kind === 'd') n.halo.scale.setScalar(n.baseScale * (1 + Math.sin(t * 1.3 + n.id) * .06));
+    else if (n.lit && show.mine) n.halo.scale.setScalar(n.baseScale * (1 + Math.sin(t * 2.4 + n.id) * .18));
+  }
+  if (++frame % 6 === 0) updateLabels();
+  composer.render();
+  labels.render(scene, camera);
+}
+function updateLabels() {
+  const cam = camera.position;
+  for (const n of N) {
+    if (n.kind === 'd') { n.el.classList.toggle('off', !!focusSet && !focusSet.has(n.key)); continue; }
+    let on;
+    if (focusSet) on = focusSet.has(n.key) && (sel?.kind !== 'd' || n.links.length > 0 || n.lit || cam.distanceTo(n.pos) < 160);   // 选中领域时只标有跨领域联系的星，免得挤成一团
+    else on = n === hover || cam.distanceTo(n.pos) < 230 || (n.lit && show.mine && cam.distanceTo(n.pos) < 600);
+    n.el.classList.toggle('off', !on);
+  }
+}
+
+// ---------- 选中与面板 ----------
+function select(n, center) {
+  sel = n; focusSet = n ? neighborhood(n) : null; applyFocus(); updateLabels();
+  if (!n) { panel.classList.remove('on'); return; }
+  pc.innerHTML = n.kind === 'd' ? domainPanel(n) : conceptPanel(n);
+  panel.classList.add('on');
+  pc.querySelectorAll('[data-go]').forEach(b => b.onclick = () => select(byKey.get(b.dataset.go), true));
+  if (center) {   // 镜头拉到能同时看见它和所有相连的星
+    let far = 0;
+    focusSet.forEach(k => { const m = byKey.get(k); if (m && m.kind === 'c') far = Math.max(far, m.pos.distanceTo(n.pos)); });
+    setTour(false); flyTo(n.pos, Math.min(1400, Math.max(n.kind === 'd' ? 340 : 220, far * 1.5)) * (MOBILE ? 1.3 : 1));
+  }
+}
+document.getElementById('px').onclick = () => select(null);
+function domainPanel(n) {
+  const d = n.d, cross = {}, shared = {};
+  G.links.forEach(l => { if (l.sd === d.id && l.dd !== d.id) cross[l.dd] = (cross[l.dd] || 0) + 1; else if (l.dd === d.id && l.sd !== d.id) cross[l.sd] = (cross[l.sd] || 0) + 1; });
+  G.nodes.forEach(c => { if (c.domains.length > 1 && c.domains.includes(d.id)) c.domains.forEach(o => o !== d.id && (shared[o] = (shared[o] || 0) + 1)); });
+  const others = [...new Set([...Object.keys(cross), ...Object.keys(shared)].map(Number))].sort((a, b) => ((cross[b] || 0) + (shared[b] || 0)) - ((cross[a] || 0) + (shared[a] || 0)));
+  const mine = N.filter(m => m.kind === 'c' && m.c.domains.includes(d.id) && m.lit).length;
+  return `<div class="sub">${esc(d.category)} · ${d.size} 个知识点${G.loggedIn ? ` · 你点亮了 ${mine} 个` : ''}</div><h2>${esc(d.name)}</h2><p style="margin:4px 0 0;color:#C9CEE2">${esc(d.summary)}</p>
+    <a class="go" href="/d/${d.id}">打开知识地图</a>
+    <h4>和其他领域的联系</h4>${others.length ? others.map(o => { const od = G.domains.find(x => x.id === o); return `<button class="chip" data-go="d${o}"><i style="background:${G.color[o]}"></i>${esc(od.name)}<span style="color:#9AA3C0">${cross[o] ? ` ${cross[o]} 条` : ''}${shared[o] ? ` ${shared[o]} 个共有知识点` : ''}</span></button>`; }).join('') : '<p class="sub" style="margin:0">还没有找到。领域越多，联系越多。</p>'}`;
+}
+function conceptPanel(n) {
+  const c = n.c, dom = c.domains.map(did => G.domains.find(x => x.id === did));
+  const st = n.lit ? '<span style="color:#FFD166">你已点亮</span>' : n.known ? '<span style="color:#6FD3A8">诊断显示你已会</span>' : '';
+  const pre = [], post = [];
+  springs.forEach(s => { if (s.kind !== '前置') return; if (s.b === n) pre.push(s.a); if (s.a === n) post.push(s.b); });
+  const lk = n.links.map(s => {
+    const out = s.a === n, o = out ? s.b : s.a, t = s.l.type, od = G.domains.find(x => x.id === (out ? s.l.dd : s.l.sd));
+    const verb = t === '应用' ? (out ? '被用在' : '用到了') : t === '基础' ? (out ? '学懂它才好学' : '要先懂') : t === '类比' ? '结构相同：' : '容易混淆：';
+    return `<div class="lk" style="border-color:${TYPE_C[t]}"><span class="t" style="color:${TYPE_C[t]}">${t}</span><span class="w">${verb}</span> <button data-go="${o.key}">${esc(o.name)}</button> <span class="sub">· ${esc(od?.name)}</span><div class="w">${esc(s.l.why)}</div></div>`;
+  }).join('');
+  const names = arr => arr.map(m => `<button class="chip" data-go="${m.key}">${esc(m.name)}</button>`).join('');
+  return `<div class="sub">${STAGES[c.stage]}${c.pages ? ` · 已有 ${c.pages} 页` : ''} ${st}</div><h2>${esc(c.name)}</h2><p style="margin:4px 0 0;color:#C9CEE2">${esc(c.one_line)}</p>
+    <h4>出现在${dom.length > 1 ? ` ${dom.length} 个领域` : ''}</h4>${dom.map(d => `<a class="chip" href="/d/${d.id}/n/${c.id}"><i style="background:${G.color[d.id]}"></i>在「${esc(d.name)}」里学</a>`).join('')}
+    ${lk ? `<h4>跨领域联系</h4>${lk}` : '<h4>跨领域联系</h4><p class="sub" style="margin:0">暂时没有。</p>'}
+    ${pre.length ? `<h4>先懂这些</h4>${names(pre)}` : ''}${post.length ? `<h4>学完可以学</h4>${names(post)}` : ''}`;
+}
+
+// ---------- 搜索、筛选 ----------
+const q = document.getElementById('q'), sr = document.getElementById('sr');
+q.oninput = () => {
+  const s = q.value.trim().toLowerCase();
+  if (!s) { sr.innerHTML = ''; return; }
+  const hits = N.filter(n => n.name.toLowerCase().includes(s)).slice(0, 8);
+  sr.innerHTML = hits.map(n => `<button data-k="${n.key}">${esc(n.name)} <small>${n.kind === 'd' ? '领域' : esc(n.c.domains.map(id => G.domains.find(d => d.id === id).name).join('、'))}</small></button>`).join('') || '<small style="color:#7C84A3;padding:4px 6px;display:block">没找到</small>';
+  sr.querySelectorAll('button').forEach(b => b.onclick = () => { select(byKey.get(b.dataset.k), true); sr.innerHTML = ''; q.value = ''; });
+};
+document.getElementById('ft').onclick = () => document.getElementById('tg').classList.toggle('open');
+document.querySelectorAll('#tg input').forEach(i => i.onchange = () => {
+  show[i.dataset.t] = i.checked;
+  if (i.dataset.t === 'mine') setLit();
+  if (sel) focusSet = neighborhood(sel);
+  applyFocus(); updateLabels();
+});
+
+// ---------- 点选和悬停：在屏幕上找最近的星 ----------
+const v3 = new THREE.Vector3();
+function pick(x, y) {
+  const w = gw.clientWidth, h = gw.clientHeight;
+  let best = null, bd = Infinity;
+  for (const n of N) {
+    v3.copy(n.pos).project(camera);
+    if (v3.z > 1) continue;
+    const sx = (v3.x + 1) / 2 * w, sy = (1 - v3.y) / 2 * h;
+    const pr = n.r * .55 / Math.tan(camera.fov * Math.PI / 360) / camera.position.distanceTo(n.pos) * h / 2;
+    const d = Math.hypot(sx - x, sy - y);
+    if (d < Math.max(12, pr + 6) && d < bd) { best = n; bd = d; }
+  }
+  return best;
+}
+let down = null;
+const el = renderer.domElement;
+el.addEventListener('pointerdown', e => { down = [e.offsetX, e.offsetY]; });
+el.addEventListener('pointerup', e => {
+  if (down && Math.hypot(e.offsetX - down[0], e.offsetY - down[1]) < 6) select(pick(e.offsetX, e.offsetY), true);
+  down = null;
+});
+el.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || e.buttons) { tip.style.display = 'none'; return; }
+  const n = pick(e.offsetX, e.offsetY);
+  if (n !== hover) {
+    hover = n; el.style.cursor = n ? 'pointer' : 'grab';
+    if (!sel) { focusSet = n ? neighborhood(n) : null; applyFocus(); updateLabels(); }
+  }
+  if (n) {
+    tip.style.display = 'block';
+    tip.innerHTML = n.kind === 'd' ? `<b>${esc(n.name)}</b><br>${n.d.size} 个知识点 · 点击飞过去` : `<b>${esc(n.name)}</b><br>${esc(n.c.one_line)}${n.links.length ? `<br><span style="color:#F6C15B">${n.links.length} 条跨领域联系</span>` : ''}`;
+    tip.style.left = Math.min(gw.clientWidth - 270, e.offsetX + 14) + 'px'; tip.style.top = (e.offsetY + 14) + 'px';
+  } else tip.style.display = 'none';
+});
+el.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+</script>{% endblock %}

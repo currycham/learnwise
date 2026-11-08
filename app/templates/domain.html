@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ d.name }} 知识地图 · LearnWise{% endblock %}
+{% block desc %}{{ d.summary }}{% endblock %}
+{% block head %}<style>
+.dhead h1{font-size:32px;margin:2px 0 6px}
+.lvl{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.lvl button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:3px 13px;font-size:14px;cursor:pointer}
+.lvl button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.next{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--accent-soft);border-color:transparent}
+.map{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.stage h3{font-size:16px;margin:0 0 8px;color:var(--muted);font-family:var(--f-body);font-weight:600}
+.node{display:block;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;text-decoration:none;color:inherit;transition:border-color .15s,box-shadow .15s,opacity .15s}
+.node:hover{border-color:var(--accent)}
+.node b{display:block;font-size:16px}
+.node .ol{display:block;font-size:13px;color:var(--muted);line-height:1.55;margin-top:2px}
+.node .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--muted)}
+.node .st{position:absolute;top:8px;right:10px;font-size:12px}
+.node.lit{background:var(--glow-soft);border-color:var(--glow);box-shadow:0 0 0 3px var(--glow-soft),0 0 18px color-mix(in srgb,var(--glow) 45%,transparent)}
+.node.lit .st{color:var(--glow);font-weight:700}
+.node.known .st{color:var(--ok)}
+.node.rec{border:1.5px solid var(--accent)}
+.node.rec .st{color:var(--accent);font-weight:700}
+.node.focus b::after{content:" ★";color:var(--glow)}
+.map.hl .node{opacity:.35}
+.map.hl .node.pre,.map.hl .node.me{opacity:1}
+.map.hl .node.pre{border-color:var(--accent);border-style:dashed}
+.risk{border-left:3px solid var(--bad);padding:6px 12px;background:var(--bad-soft);border-radius:6px;font-size:14px;margin:10px 0}
+@media (max-width:760px){.map{grid-template-columns:1fr}}
+</style>{% endblock %}
+{% block body %}
+<div class="dhead">
+  <div class="small muted"><a href="/" style="color:inherit">首页</a> › {{ d.category }}</div>
+  <h1>{{ d.name }}</h1>
+  <p class="muted" style="margin:0">{{ d.summary }} <a href="/graph?d={{ d.id }}" style="white-space:nowrap">在星图里看它和其他领域的联系 →</a></p>
+  {% if risk %}<div class="risk">{{ risk }}</div>{% endif %}
+</div>
+
+<div class="card" style="margin-top:18px">
+  <div class="row" style="justify-content:space-between">
+    <div><b>你现在的水平</b> <span class="small muted">决定学习页的档位：完全不懂、听说过 → 启蒙；入门、能用 → 进阶；熟练、专家 → 深入</span></div>
+    {% if user %}<span class="small muted">点亮 {{ lit }} / {{ graph.nodes|length }}{% if known %} · 诊断已会 {{ known }}{% endif %}</span>{% endif %}
+  </div>
+  <div class="lvl" id="lvl">{% for l in LABELS %}<button type="button" class="{{ 'on' if l == label }}">{{ l }}</button>{% endfor %}</div>
+  {% if not label %}<p class="small muted">先选一个最接近的水平。不选也能开始：优先打开已有页面，暂无页面时默认进阶档。</p>{% endif %}
+  <div class="row"><a class="btn ghost" href="/d/{{ d.id }}/diagnose">不确定？做 9 道诊断题{% if diag and diag.status == 'ready' %}（约 3 分钟）{% endif %}</a>
+    <span class="err" id="err" style="min-height:0"></span></div>
+</div>
+
+{% if nxt %}
+<div class="card next" style="margin-top:14px">
+  <div><span class="small muted">{{ '下一步' if lit or known else '建议从这里开始' }}</span><br><b style="font-size:20px;font-family:var(--f-display)">{{ nxt.name }}</b>
+    <span class="muted small"> · {{ nxt.one_line }}</span></div>
+  <a class="btn" href="/d/{{ d.id }}/n/{{ nxt.id }}{% if tier %}?level={{ tier }}{% endif %}">开始学{% if tier %}（{{ tier }}档）{% endif %}</a>
+</div>
+{% endif %}
+
+<div class="map" id="map">
+{% for s in range(3) %}
+  <div class="stage"><h3>{{ STAGES[s] }}</h3>
+  {% for n in graph.nodes if n.stage == s %}
+    <a class="node {{ n.state }}{{ ' rec' if nxt and n.id == nxt.id }}{{ ' focus' if focus and n.id == focus.id }}" data-id="{{ n.id }}" data-pre="{{ n.prereqs|join(',') }}"
+       href="/d/{{ d.id }}/n/{{ n.id }}{% if tier %}?level={{ tier }}{% endif %}">
+      <span class="st">{% if n.state == 'lit' %}已点亮{% elif n.state == 'known' %}✓ 已会{% elif nxt and n.id == nxt.id %}下一步{% elif n.state == 'learning' %}学习中{% endif %}</span>
+      <b>{{ n.name }}</b><span class="ol">{{ n.one_line }}</span>
+      <span class="meta"><span>{{ n.minutes }} 分钟</span>{% if n.prereq_names %}<span>· 先懂：{{ n.prereq_names|join('、') }}</span>{% endif %}
+        {% for lv in n.levels %}<span class="pill">{{ lv }} · 可学</span>{% endfor %}
+        {% for lv in n.pending_levels %}<span class="pill">{{ lv }} · 准备中</span>{% endfor %}</span>
+    </a>
+  {% endfor %}</div>
+{% endfor %}
+</div>
+<p class="small muted" style="margin-top:10px">“可学”表示该档页面已生成；“准备中”可点开查看进度。首页的三个档位会提前准备，阅读时也会为你准备同档的下一页。其他页面登录后可生成，通常需要 3–5 分钟，生成后所有人都能学。鼠标移到知识点上可查看前置知识。</p>
+{% endblock %}
+{% block script %}<script>
+const map = document.getElementById('map');
+map.querySelectorAll('.node').forEach(n => {
+  n.onmouseenter = () => {
+    const pre = new Set();
+    const walk = id => { const el = map.querySelector(`.node[data-id="${id}"]`); (el?.dataset.pre || '').split(',').filter(Boolean).forEach(p => { if (!pre.has(p)) { pre.add(p); walk(p); } }); };
+    walk(n.dataset.id);
+    if (!pre.size) return;
+    map.classList.add('hl'); n.classList.add('me');
+    pre.forEach(p => map.querySelector(`.node[data-id="${p}"]`)?.classList.add('pre'));
+  };
+  n.onmouseleave = () => { map.classList.remove('hl'); map.querySelectorAll('.me,.pre').forEach(x => x.classList.remove('me', 'pre')); };
+});
+document.querySelectorAll('#lvl button').forEach(b => b.onclick = async () => {
+  {% if not user %}location.href = '/login?next=/d/{{ d.id }}'; return;{% endif %}
+  try { await api('/api/domains/{{ d.id }}/level', { label: b.textContent }); location.reload(); }
+  catch (x) { document.getElementById('err').textContent = x.message; }
+});
+</script>{% endblock %}

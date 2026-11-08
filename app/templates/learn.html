@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__ · LearnWise</title>
+<meta name="description" content="__DESC__">
+<style>
+:root{
+  --bg:#F5F3EE; --surface:#FDFCF9; --ink:#1D2130; --muted:#626879; --line:#DCD7CB;
+  --accent:#3549A3; --accent-ink:#FFFFFF; --accent-soft:#E2E6F5;
+  --glow:#C98A12; --glow-soft:#F6E6C2;
+  --ok:#2D7A4E; --ok-soft:#DCEEE2; --bad:#AE4038; --bad-soft:#F5DEDB;
+  --code-bg:#EEECE6;
+  --f-display:"Songti SC","STSong","Noto Serif CJK SC","Source Han Serif SC","SimSun",serif;
+  --f-body:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12141B; --surface:#1A1D27; --ink:#E3E5EC; --muted:#9AA0B2; --line:#2E3242;
+  --accent:#8E9EF0; --accent-ink:#11142A; --accent-soft:#252C4D;
+  --glow:#F0B54A; --glow-soft:#3B2F17;
+  --ok:#62C48A; --ok-soft:#173225; --bad:#EE8379; --bad-soft:#3D1F1C; --code-bg:#222634;
+}}
+:root[data-theme="dark"]{
+  --bg:#12141B; --surface:#1A1D27; --ink:#E3E5EC; --muted:#9AA0B2; --line:#2E3242;
+  --accent:#8E9EF0; --accent-ink:#11142A; --accent-soft:#252C4D;
+  --glow:#F0B54A; --glow-soft:#3B2F17;
+  --ok:#62C48A; --ok-soft:#173225; --bad:#EE8379; --bad-soft:#3D1F1C; --code-bg:#222634;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 var(--f-body);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-height:96px;resize:vertical}
+textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code{font:.9em var(--f-mono);background:var(--code-bg);padding:.1em .35em;border-radius:4px}
+pre{font:14px/1.6 var(--f-mono);background:var(--code-bg);padding:12px 14px;border-radius:8px;overflow-x:auto;margin:10px 0}
+pre code{background:none;padding:0}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.35;margin:0}
+
+/* 顶栏：步骤 + 番茄钟 */
+.bar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar-in{max-width:760px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;gap:12px}
+.brand{font-weight:700;font-size:15px;white-space:nowrap;text-decoration:none;color:var(--ink)}
+.brand b{color:var(--accent)}
+.steps{flex:1;min-width:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.steps::-webkit-scrollbar{display:none}
+.steps a{font-size:13px;text-decoration:none;color:var(--muted);padding:3px 9px;border-radius:99px;white-space:nowrap}
+.steps a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.steps a.done::after{content:" ✓";color:var(--ok)}
+.timer{white-space:nowrap;font:600 14px var(--f-mono);border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 12px;cursor:pointer}
+.timer.run{border-color:var(--accent);color:var(--accent)}
+.prog{height:3px;background:var(--accent);width:0;transition:width 1s linear}
+
+main{max-width:760px;margin:0 auto;padding:24px 16px 80px}
+section{margin:0 0 28px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px}
+.kicker{font-size:13px;color:var(--muted);letter-spacing:.05em;margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sec-h{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
+.sec-h h2{font-size:22px}
+.sec-h .t{font-size:13px;color:var(--muted)}
+.why{font-size:13px;color:var(--muted);margin:-6px 0 12px}
+.why b{font-weight:600;color:var(--ink)}
+.muted{color:var(--muted)}
+.pill{display:inline-block;font-size:12px;padding:1px 9px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.lv{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:7px 16px;cursor:pointer;font-size:15px}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* 头部 */
+.hero h1{font-size:34px;margin:4px 0 8px}
+.hero .one{font-size:18px;margin:0 0 14px}
+.notice{font-size:13px;color:var(--muted);border-left:3px solid var(--line);padding-left:10px;margin-top:14px}
+
+/* 钩子 */
+.hook{background:linear-gradient(135deg,var(--accent-soft),var(--surface) 70%);}
+.hook h3{font-size:20px;margin-bottom:8px}
+.hook p{margin:0}
+
+/* 选择题 */
+.q{margin:0 0 6px;font-weight:600;white-space:pre-wrap}
+.opts{display:grid;gap:8px;margin:10px 0}
+.opt{white-space:pre-wrap;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 14px;cursor:pointer;line-height:1.6}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.pick{border-color:var(--accent);background:var(--accent-soft)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.fb{font-size:14px;border-radius:8px;padding:8px 12px;margin-top:6px;background:var(--bg)}
+.fb.ok{background:var(--ok-soft)}
+.fb.no{background:var(--bad-soft)}
+
+/* 地图 */
+.map{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 14px}
+.stage{background:var(--bg);border-radius:10px;padding:10px}
+.stage h4{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:600}
+.node{display:block;font-size:14px;padding:6px 10px;border-radius:8px;border:1px dashed var(--line);margin-bottom:6px;color:var(--muted);position:relative}
+.node .tag{font-size:11px;margin-left:4px;color:var(--muted)}
+.node.pre{border-style:solid;color:var(--ink)}
+.node.unl{border-style:solid;border-color:var(--accent);color:var(--accent)}
+.node.cur{border:1.5px solid var(--glow);background:var(--glow-soft);color:var(--ink);font-weight:600}
+.node.lit{background:var(--glow);border-color:var(--glow);color:#1D1606;box-shadow:0 0 0 4px var(--glow-soft),0 0 22px var(--glow);animation:lit 1.2s ease}
+@keyframes lit{0%{box-shadow:0 0 0 0 var(--glow)}60%{box-shadow:0 0 0 12px var(--glow-soft),0 0 40px var(--glow)}}
+.legend{font-size:12px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+
+/* 知识块 */
+.chunk{margin-bottom:16px}
+.chunk .no{font:700 13px var(--f-mono);color:var(--accent)}
+.chunk h3{font-size:20px;margin:2px 0 6px}
+.chunk .one{font-size:17px;font-weight:600;margin:0 0 10px;padding:8px 12px;background:var(--accent-soft);border-radius:8px}
+.chunk p{margin:0 0 10px}
+.aside{border-radius:8px;padding:10px 14px;margin:12px 0;font-size:15px}
+.aside .h{font-size:12px;font-weight:700;letter-spacing:.05em;display:block;margin-bottom:2px}
+.aside.an{background:var(--glow-soft)} .aside.an .h{color:var(--glow)}
+.aside.ex{background:var(--bg);border:1px solid var(--line)} .aside.ex .h{color:var(--accent)}
+.aside.my{background:var(--bad-soft)} .aside.my .h{color:var(--bad)}
+.recall{border-top:1px dashed var(--line);margin-top:14px;padding-top:12px}
+.recall .h{font-size:13px;color:var(--muted);margin-bottom:6px}
+.rq{margin:0 0 10px}
+.rq .ans{display:none;background:var(--bg);border-radius:8px;padding:8px 12px;margin:6px 0;font-size:15px}
+.rq.open .ans{display:block}
+.rate{display:none;gap:6px;margin-top:4px}
+.rq.open .rate{display:flex}
+.rate button{font-size:13px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:2px 12px;cursor:pointer}
+.rate button.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.cards-note{font-size:13px;color:var(--muted);text-align:right}
+
+/* 图 */
+.dg{margin:14px 0 6px}
+.dg figcaption{font-size:13px;color:var(--muted);text-align:center;margin-top:6px}
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;overflow-x:auto}
+.flow .s{flex:1;min-width:96px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;line-height:1.5;display:flex;align-items:center}
+.flow .ar{flex:none;width:22px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700}
+.cmp{display:grid;gap:10px}
+.cmp .c{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:14px}
+.cmp .c h5{margin:0 0 6px;font-size:14px;color:var(--accent)}
+.cmp ul{margin:0;padding-left:18px}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:14px}
+.bars .tr{background:var(--bg);border-radius:4px;height:16px;overflow:hidden}
+.bars .fl{height:100%;background:var(--accent);border-radius:4px}
+.bars .v{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:right}
+@media (max-width:560px){
+  .flow{flex-direction:column}
+  .flow .ar{width:auto;height:20px;transform:rotate(90deg)}
+  .map{grid-template-columns:1fr}
+  .hero h1{font-size:28px}
+  .card{padding:18px 16px}
+  .brand{display:none}
+}
+
+/* 练习 */
+.pr{margin-bottom:16px}
+.pr .ty{font-size:12px;color:var(--accent);font-weight:700}
+.pr ol{padding-left:22px;margin:6px 0}
+.pr li{margin-bottom:4px}
+.blank{display:inline-block;min-width:3em;border-bottom:2px solid var(--glow);color:transparent}
+.reveal{display:none;margin-top:8px;background:var(--bg);border-radius:8px;padding:10px 14px}
+.reveal.open{display:block}
+
+/* 争议 */
+.db{margin-bottom:14px}
+.db .views{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:8px 0}
+.db .v{background:var(--bg);border-radius:8px;padding:10px 12px;font-size:14px}
+.db .v b{display:block;color:var(--accent);margin-bottom:2px}
+.db .st{font-size:14px;color:var(--muted)}
+
+/* 闯关 */
+.quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.dots{display:flex;gap:5px}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dots i.ok{background:var(--ok)} .dots i.no{background:var(--bad)} .dots i.now{outline:2px solid var(--accent);outline-offset:1px}
+.streak{font-size:14px;color:var(--glow);font-weight:700;min-height:1em}
+.kind{font-size:12px}
+.result{text-align:center;padding:10px 0}
+.result .big{font:700 44px var(--f-display);color:var(--accent)}
+.pred-review{margin-top:14px;text-align:left}
+
+/* 费曼 */
+.checks label{display:flex;gap:8px;align-items:flex-start;font-size:15px;margin:4px 0;cursor:pointer}
+.checks input{margin-top:6px}
+.gaps{font-size:14px;margin-top:10px}
+
+a.node{text-decoration:none}
+a.node:hover{border-color:var(--accent)}
+.node.done{border-style:solid;background:var(--glow-soft);color:var(--ink)}
+.tiers{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:13px}
+.tiers a{color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:1px 10px}
+.tiers a:hover{color:var(--accent);border-color:var(--accent)}
+.risk{border-left:3px solid var(--bad);background:var(--bad-soft);padding:6px 12px;border-radius:6px;font-size:14px;margin-top:12px}
+.chat{display:flex;flex-direction:column;gap:8px;margin:10px 0;max-height:420px;overflow-y:auto}
+.msg{padding:8px 12px;border-radius:10px;font-size:15px;max-width:88%;white-space:pre-wrap}
+.msg.u{align-self:flex-end;background:var(--accent-soft)}
+.msg.a{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}
+.pt{display:flex;gap:8px;font-size:15px;margin:6px 0}
+.pt .s{flex:none;font-size:12px;border-radius:99px;padding:1px 8px;height:fit-content;margin-top:3px}
+.pt .s.covered{background:var(--ok-soft);color:var(--ok)} .pt .s.partial{background:var(--glow-soft);color:var(--glow)} .pt .s.missed{background:var(--bad-soft);color:var(--bad)}
+.next-box{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);text-align:center}
+.foot{font-size:13px;color:var(--muted);text-align:center;margin-top:40px;line-height:2}
+.src li{font-size:14px;margin-bottom:4px}
+.next-learning{position:fixed;bottom:0;left:0;right:0;z-index:9;background:var(--surface);border-top:1px solid var(--line);padding:10px max(16px,calc((100vw - 728px)/2)) calc(10px + env(safe-area-inset-bottom));display:flex;gap:12px;align-items:center;justify-content:space-between;font-size:14px}
+.next-learning[hidden]{display:none}.with-next{padding-bottom:120px}
+.next-learning .copy{min-width:0;overflow-wrap:anywhere}.next-learning .btn{flex:none;text-decoration:none}
+@media(max-width:560px){.bar-in{gap:6px;padding:8px}.steps a{padding:10px 8px}.timer{padding:8px}.card{padding:16px}.hero h1{font-size:30px}.cmp{overflow-x:auto}.cmp .c{min-width:130px}.tiers a{padding:8px 12px}.next-learning{gap:8px;font-size:12px}.next-learning .btn{padding:10px}.sec-h{flex-wrap:wrap}main{overflow-wrap:anywhere}}
+</style>
+</head>
+<body>
+<div class="bar"><div class="bar-in">
+  <a class="brand" href="index.html">Learn<b>Wise</b></a>
+  <nav class="steps" id="steps"></nav>
+  <button class="timer" id="timer" type="button" title="开始一个专注时段">▶ 30:00</button>
+</div><div class="prog" id="prog"></div></div>
+
+<main id="app"></main>
+<aside id="next-learning" class="next-learning" aria-label="下一步学习" hidden></aside>
+
+<script>
+const PAGE = /*__PAGE_JSON__*/null;
+// 网站传进来的上下文；样例页没有，全部按离线处理
+const LW = Object.assign({ home: 'index.html', api: false, links: [], loggedIn: false, nodeIds: {}, tiers: {}, litNodes: [], cards: {}, risk: '', disclosure: '内容由 AI 生成' }, /*__LW__*/null);
+</script>
+<script>
+(() => {
+const P = PAGE, C = P.concept;
+const KEY = 'learnwise:' + C.domain + ':' + C.name + ':' + C.level;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(KEY + ':' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(KEY + ':' + k, JSON.stringify(v)); } catch {} },
+};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// 轻量标记：```代码块```、`行内代码`、**加粗**、\n 换行
+function md(s) {
+  const parts = String(s ?? '').split(/```(?:python|py|text)?\n?([\s\S]*?)```/);
+  return parts.map((p, i) => i % 2 ? `<pre><code>${esc(p.replace(/\n$/, ''))}</code></pre>`
+    : esc(p).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>')).join('');
+}
+const blanks = s => md(s).replace(/_{3,}/g, '<span class="blank">___</span>');
+const h = (tag, attrs, html) => `<${tag}${attrs ? ' ' + attrs : ''}>${html}</${tag}>`;
+const app = document.getElementById('app');
+const LV_TIP = { '启蒙': '从零开始，先建立直觉', '进阶': '精确定义，动手练习', '深入': '边界、争议与前沿' };
+
+const STEPS = [['hook', '开场'], ['predict', '先猜'], ['map', '定位'], ['learn', '精学'], ['practice', '练习']];
+if (P.debates?.length) STEPS.push(['debates', '争议']);
+STEPS.push(['quiz', '闯关'], ['feynman', '费曼'], ['transfer', '迁移'], ['more', '延伸']);
+
+function diagram(d) {
+  if (!d) return '';
+  let body = '';
+  if (d.type === 'flow') body = `<div class="flow">${d.steps.map(s => `<div class="s">${md(s)}</div>`).join('<div class="ar">→</div>')}</div>`;
+  if (d.type === 'compare') body = `<div class="cmp" style="grid-template-columns:repeat(${d.columns.length},1fr)">${d.columns.map(c => `<div class="c"><h5>${md(c.title)}</h5><ul>${c.items.map(x => `<li>${md(x)}</li>`).join('')}</ul></div>`).join('')}</div>`;
+  if (d.type === 'bars') {
+    const max = Math.max(...d.bars.map(b => b.value)) || 1;
+    body = `<div class="bars">${d.bars.map(b => `<span>${md(b.label)}</span><div class="tr"><div class="fl" style="width:${(b.value / max * 100).toFixed(1)}%"></div></div><span class="v">${b.value}${esc(d.unit || '')}</span>`).join('')}</div>`;
+  }
+  return `<figure class="dg" style="margin-left:0;margin-right:0">${body}<figcaption>${md(d.caption)}</figcaption></figure>`;
+}
+
+function mcq(q, name) {
+  return `<p class="q">${md(q.q)}</p><div class="opts" data-q="${name}">${q.options.map((o, i) => `<button class="opt" type="button" data-i="${i}">${String.fromCharCode(65 + i)}. ${md(o)}</button>`).join('')}</div><div class="fbw"></div>`;
+}
+
+const sec = (id, title, time, why, inner, extra = '') =>
+  `<section id="${id}"${extra}><div class="sec-h"><h2>${title}</h2>${time ? `<span class="t">${time}</span>` : ''}</div>${why ? `<p class="why">${why}</p>` : ''}${inner}</section>`;
+
+const m = P.map, cur = C.name;
+const nodeCls = n => n === cur ? 'cur' : m.prereqs.includes(n) ? 'pre' : m.unlocks.includes(n) ? 'unl' : '';
+const nodeTag = n => n === cur ? '本页' : m.prereqs.includes(n) ? '前置' : m.unlocks.includes(n) ? '可解锁' : '';
+
+let html = '';
+html += `<section class="hero">
+  <div class="kicker">${LW.domainUrl ? `<a href="${LW.domainUrl}" style="color:inherit">${esc(C.domain)} 知识地图</a>` : `<span>${esc(C.domain)}</span>`}<span>›</span><span>${esc(C.name)}</span></div>
+  <h1>${esc(C.name)}</h1>
+  <p class="one">${md(C.one_line)}</p>
+  <div class="row"><span class="pill lv" title="${LV_TIP[C.level]}">${esc(C.level)}档 · ${LV_TIP[C.level]}</span><span class="pill">约 ${C.minutes || 30} 分钟</span>${(C.aliases || []).map(a => `<span class="pill">${esc(a)}</span>`).join('')}</div>
+  ${Object.keys(LW.tiers).length ? `<div class="tiers"><span class="muted">太难或太简单？换一档：</span>${Object.entries(LW.tiers).filter(([lv]) => lv !== C.level).map(([lv, u]) => `<a href="${u}">${lv}档</a>`).join('')}</div>` : ''}
+  ${LW.risk ? `<div class="risk">${esc(LW.risk)}</div>` : ''}
+  <p class="notice">本页由 AI 基于公开资料生成，经过校验和质检，仍可能有错。可信度：${{ high: '高', medium: '中', low: '低' }[P.confidence.level]}。${md(P.confidence.notes)}</p>
+</section>`;
+
+html += sec('hook', '开场', '2 分钟', '', `<div class="card hook"><h3>${md(P.hook.title)}</h3><p>${md(P.hook.text)}</p></div>`);
+
+html += sec('predict', '先猜一猜', '1 分钟', '<b>为什么先猜：</b>在学之前先尝试回答，哪怕猜错，也会让接下来的讲解记得更牢。答案学完再揭晓。',
+  `<div class="card">${P.predict.map((q, i) => mcq(q, 'p' + i)).join('<hr style="border:0;border-top:1px dashed var(--line);margin:16px 0">')}</div>`);
+
+html += sec('map', '它在地图的哪里', '1 分钟', `<b>为什么先看地图：</b>先知道全局，再学细节，新知识才挂得住。`,
+  `<div class="card"><div class="map">${m.stages.map(s => `<div class="stage"><h4>${esc(s.name)}</h4>${s.nodes.map(n => { const id = LW.nodeIds[n], tag = nodeTag(n), lit = n !== cur && LW.litNodes.includes(n);
+      const inner = `${esc(n)}${tag ? `<span class="tag">· ${tag}</span>` : ''}${lit ? '<span class="tag">· 已点亮</span>' : ''}`;
+      return id && n !== cur ? `<a class="node ${nodeCls(n)}${lit ? ' done' : ''}" href="${LW.domainUrl}/n/${id}?level=${encodeURIComponent(C.level)}" data-node="${esc(n)}">${inner}</a>`
+                             : `<span class="node ${nodeCls(n)}" data-node="${esc(n)}">${inner}</span>`; }).join('')}</div>`).join('')}</div>
+  <p style="margin:0 0 10px">${md(m.why_here)}</p>
+  <div class="legend"><span>实线：前置知识</span><span style="color:var(--accent)">蓝框：学完可解锁</span><span style="color:var(--glow)">金框：本页，闯关及格后点亮</span></div></div>`);
+
+html += sec('learn', '精学', `${P.chunks.length} 块 · 约 15 分钟`, '<b>怎么学：</b>一块一块来。每块读完，不看上文先回答两道题，再点开对照——主动回忆比反复重读有效得多。',
+  P.chunks.map((k, i) => `<article class="card chunk" id="chunk-${i + 1}">
+    <div class="no">第 ${i + 1} 块 / ${P.chunks.length}</div>
+    <h3>${md(k.title)}</h3>
+    <p class="one">${md(k.one)}</p>
+    ${k.core.map(p => `<p>${md(p)}</p>`).join('')}
+    ${diagram(k.diagram)}
+    ${k.analogy ? `<div class="aside an"><span class="h">打个比方</span>${md(k.analogy)}</div>` : ''}
+    <div class="aside ex"><span class="h">举个例子</span>${md(k.example)}</div>
+    <div class="aside my"><span class="h">容易想错</span>${md(k.myth)}</div>
+    <div class="recall"><div class="h">合上上文，先在心里答一遍，再点开</div>
+      ${k.recall.map((r, j) => `<div class="rq" data-card="${i}-${j}"><p class="q" style="font-weight:500">${md(r.q)}</p>
+        <button class="btn ghost" type="button" data-act="show" style="font-size:14px;padding:3px 12px">点开对照</button>
+        <div class="ans">${md(r.a)}</div>
+        <div class="rate"><span class="muted" style="font-size:13px">我刚才：</span><button type="button" data-r="good">答上来了</button><button type="button" data-r="hard">模糊</button><button type="button" data-r="again">没想起来</button></div></div>`).join('')}
+    </div></article>`).join('') + `<p class="cards-note" id="cards-note"></p>`);
+
+const PR_T = { worked: '看一遍：完整范例', faded: '补全：挖掉了几步', solo: '自己做', open: '开放题' };
+html += sec('practice', '练习', '5 分钟', {
+  '启蒙': '<b>怎么练：</b>先跟着完整的例子走一遍，看清每一步为什么这么做。',
+  '进阶': '<b>怎么练：</b>从完整范例，到挖空补全，再到独立完成，提示一点点撤掉。',
+  '深入': '<b>怎么练：</b>没有标准答案。先写下你的论证，再看参考思路。',
+}[C.level], `<div class="card">${P.practice.map((x, i) => `<div class="pr"><div class="ty">${i + 1} · ${PR_T[x.type]}</div><p class="q">${md(x.q)}</p>
+  ${x.steps.length ? `<ol>${x.steps.map(s => `<li>${blanks(s)}</li>`).join('')}</ol>` : ''}
+  ${x.type === 'worked' ? `<div class="reveal open"><b>结果：</b>${md(x.a)}</div>` : `${x.type !== 'faded' ? '<textarea placeholder="先写下你的答案或思路"></textarea>' : ''}<div class="row" style="margin-top:8px"><button class="btn ghost" type="button" data-act="reveal">${x.type === 'open' ? '看参考思路' : '看答案'}</button></div><div class="reveal">${md(x.a)}</div>`}
+  </div>`).join('<hr style="border:0;border-top:1px dashed var(--line);margin:16px 0">')}</div>`);
+
+if (P.debates?.length) html += sec('debates', '争议与前沿', '', '<b>为什么要看争议：</b>到了这一层，重要的不是记住结论，而是知道哪些问题还没有定论、各派凭什么这么说。',
+  `<div class="card">${P.debates.map(d => `<div class="db"><p class="q">${md(d.question)}</p><div class="views">${d.views.map(v => `<div class="v"><b>${md(v.who)}</b>${md(v.claim)}</div>`).join('')}</div><p class="st">现状：${md(d.status)}</p></div>`).join('')}</div>`);
+
+html += sec('quiz', '闯关', '8 题 · 约 4 分钟', '<b>为什么混着考：</b>题目里混入前置知识和新场景，逼你判断“这里该用哪个道理”，这正是真实使用时的样子。答对 6 题就能点亮地图。',
+  `<div class="card" id="quiz-box"></div>`);
+
+html += sec('feynman', '讲给别人听', '3 分钟', '<b>费曼学习法：</b>能用大白话讲清楚，才算真懂。卡住的地方，就是还没懂的地方。',
+  `<div class="card"><p class="q">${md(P.feynman.prompt)}</p><textarea id="fey" placeholder="用你自己的话写，不要回头翻上面" style="min-height:140px"></textarea>
+  <div class="row" style="margin-top:10px"><button class="btn" type="button" id="fey-ai" ${LW.api ? '' : 'disabled title="样例页不接模型"'}>交给 AI 老师打分</button><button class="btn ghost" type="button" id="fey-self">对照要点自查</button></div>
+  <p class="muted" style="font-size:13px;margin:6px 0 0">${LW.api ? 'AI 老师会对照这一页的要点，逐条告诉你讲到了没有、讲对了没有。' : '样例页不接模型，先对照要点自查。'}</p><div id="fey-out"></div>
+  <div id="fey-check" style="display:none;margin-top:12px"><div class="checks">${P.feynman.key_points.map((k, i) => `<label><input type="checkbox" data-k="${i}"> <span>${md(k)}</span></label>`).join('')}</div>
+  <div class="gaps"><b>大家最常讲漏的：</b><ul>${P.feynman.common_gaps.map(g => `<li>${md(g)}</li>`).join('')}</ul></div></div></div>`);
+
+html += sec('transfer', '用在自己身上', '1 分钟', '<b>为什么：</b>把新知识和自己的一件事连起来，它才不是“别人的知识”。',
+  `<div class="card"><p class="q">${md(P.transfer.prompt)}</p><textarea id="tr" style="min-height:120px">${esc(P.transfer.template)}</textarea><p class="muted" style="font-size:13px;margin:6px 0 0">写的内容只存在这台设备上。</p></div>`);
+
+html += sec('more', '延伸', '', '',
+  `<div class="card" style="margin-bottom:12px;background:var(--glow-soft);border-color:transparent"><b>休息一下。</b>学完离开屏幕 5 分钟，散散步、倒杯水。大脑会在你不盯着它的时候继续整理刚学的东西（《学习之道》里的“发散模式”）。</div>
+  <div class="card" style="margin-bottom:12px"><div class="kicker">播客</div>${P.podcast.worth
+    ? `<p style="margin:0 0 6px"><b>这一页值得做一集播客</b>：${md(P.podcast.reason)}</p><p class="muted" style="margin:0 0 4px;font-size:14px">两位主持人会聊到：</p><ul style="margin:0">${P.podcast.outline.map(o => `<li>${md(o)}</li>`).join('')}</ul><p class="muted" style="font-size:13px;margin:6px 0 0">音频还在做，后续上线。</p>`
+    : `<p style="margin:0"><b>这一页不做播客</b>：${md(P.podcast.reason)}</p>`}</div>
+  <div class="card" style="margin-bottom:12px"><div class="kicker">问老师</div><p style="margin:0 0 8px" class="muted">${md(P.tutor.style)}</p><div class="chat" id="chat"></div><div class="row" id="starters">${P.tutor.starters.map(s => `<button class="opt" type="button" ${LW.api ? '' : 'disabled title="样例页不接模型"'} style="font-size:14px">${esc(s)}</button>`).join('')}</div>
+  ${LW.api ? `<form id="ask" class="row" style="margin-top:10px;flex-wrap:nowrap"><textarea id="askq" style="min-height:44px;height:44px" placeholder="问老师任何关于这一页的问题"></textarea><button class="btn" type="submit">问</button></form>` : ''}</div>
+  ${LW.links.length ? `<div class="card" style="margin-bottom:12px"><div class="kicker">在其他领域里</div>${LW.links.map(l => `<p style="margin:0 0 10px"><span class="pill">${esc(l.type)}</span> <a href="${l.url}">${esc(l.other_name)}</a> <span class="muted" style="font-size:13px">· ${esc(l.other_domain_name)}</span><br><span class="muted" style="font-size:14px">${esc(l.why)}</span></p>`).join('')}<a href="${LW.graphUrl}" style="font-size:14px">在知识星图里看 →</a></div>` : ''}
+  <div class="card"><div class="kicker">来源</div><ul class="src" style="margin:0;padding-left:18px">${P.sources.map(s => `<li>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</li>`).join('')}</ul>
+  ${LW.api ? `<p style="margin:10px 0 0;font-size:14px"><a href="#" id="fb-open">发现内容有误？告诉我们</a></p><div id="fb-box" style="display:none;margin-top:8px"><textarea id="fb-text" placeholder="哪里有问题？比如第几块、哪道题，怎么错了"></textarea><div class="row" style="margin-top:6px"><button class="btn" type="button" id="fb-send">提交</button><span id="fb-msg" class="muted" style="font-size:13px"></span></div></div>` : ''}</div>`);
+
+html += `<p class="foot">LearnWise · Waywise 出品${LW.api ? '' : ' · 样例页'}<br>${esc(LW.disclosure)}，可能有错误，仅供学习参考<br><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener" style="color:inherit">沪ICP备2025127932号</a></p>`;
+app.innerHTML = html;
+document.querySelector('.brand').href = LW.home;
+
+async function api(url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { location.href = LW.loginUrl; throw new Error('请先登录'); }
+  if (!r.ok) throw new Error(j.error || '出错了，请稍后再试');
+  return j;
+}
+const online = LW.api && LW.loggedIn;
+const nextBar = document.getElementById('next-learning');
+function renderNext(info) {
+  if (!LW.api) return;
+  document.body.classList.add('with-next');
+  nextBar.hidden = false;
+  nextBar.style.display = 'flex';
+  if (!info) {
+    nextBar.innerHTML = `<span class="copy">本领域的知识点都已掌握，可以回到地图复习。</span><a class="btn ghost" href="${LW.domainUrl}">看地图</a>`;
+    return;
+  }
+  const text = {ready: '已准备好', pending: '后台准备中，点开可查看进度', failed: '准备失败，点开可重试', missing: '点开后准备学习页'}[info.status] || '准备中';
+  nextBar.innerHTML = `<span class="copy">学完本页，下一步：<b>${esc(info.name)}</b><br><span class="muted">${esc(C.level)}档 · ${text}</span></span><a class="btn ghost" href="${info.url}">${info.status === 'ready' ? '学下一页' : '查看下一页'}</a>`;
+}
+async function refreshNext() {
+  if (!LW.api) return;
+  if (!document.hidden) {
+    try {
+      const response = await fetch(`/api/pages/${LW.pageId}/next`);
+      if (response.ok) renderNext((await response.json()).next);
+    } catch {}
+  }
+  setTimeout(refreshNext, 15000);
+}
+renderNext(LW.next);
+if (LW.api) setTimeout(refreshNext, 15000);
+
+// —— 顶部步骤导航 ——
+const stepsEl = document.getElementById('steps');
+stepsEl.innerHTML = STEPS.map(([id, t]) => `<a href="#${id}" data-s="${id}">${t}</a>`).join('');
+const seen = new Set(store.get('seen', []));
+const io = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return;
+  const id = e.target.id;
+  stepsEl.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.s === id));
+  // 只横向滚动步骤条本身。不能用 scrollIntoView：它会连带滚动整个页面，把读者拽回顶部（Safari 上尤其明显）
+  const a = stepsEl.querySelector(`a[data-s="${id}"]`);
+  if (a) stepsEl.scrollLeft = a.offsetLeft - stepsEl.offsetLeft - (stepsEl.clientWidth - a.offsetWidth) / 2;
+}), { rootMargin: '-40% 0px -55% 0px' });
+STEPS.forEach(([id]) => { const el = document.getElementById(id); el && io.observe(el); });
+const markDone = id => { seen.add(id); store.set('seen', [...seen]); stepsEl.querySelector(`a[data-s="${id}"]`)?.classList.add('done'); };
+seen.forEach(id => stepsEl.querySelector(`a[data-s="${id}"]`)?.classList.add('done'));
+
+// —— 番茄钟：30 分钟专注 ——
+const timer = document.getElementById('timer'), prog = document.getElementById('prog');
+const TOTAL = (C.minutes || 30) * 60;
+let left = TOTAL, tick = null;
+const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+timer.onclick = () => {
+  if (tick) { clearInterval(tick); tick = null; timer.classList.remove('run'); timer.textContent = '▶ ' + fmt(left); return; }
+  timer.classList.add('run');
+  tick = setInterval(() => {
+    left--; timer.textContent = '⏸ ' + fmt(left); prog.style.width = ((TOTAL - left) / TOTAL * 100) + '%';
+    if (left <= 0) { clearInterval(tick); tick = null; timer.textContent = '休息 5 分钟'; timer.classList.remove('run'); }
+  }, 1000);
+  timer.textContent = '⏸ ' + fmt(left);
+};
+
+// —— 先猜一猜：记下选择，闯关后揭晓 ——
+const preds = store.get('predict', {});
+document.querySelectorAll('#predict .opts').forEach(box => {
+  const i = +box.dataset.q.slice(1), fbw = box.nextElementSibling;
+  const lock = pick => {
+    box.querySelectorAll('.opt').forEach(b => { b.disabled = true; b.classList.toggle('pick', +b.dataset.i === pick); });
+    fbw.innerHTML = '<div class="fb">已记下你的猜测。学完、闯关之后揭晓答案。</div>';
+  };
+  if (preds[i] != null) lock(preds[i]);
+  box.onclick = e => { const b = e.target.closest('.opt'); if (!b || b.disabled) return; preds[i] = +b.dataset.i; store.set('predict', preds); lock(preds[i]); if (Object.keys(preds).length === P.predict.length) markDone('predict'); };
+});
+
+// —— 主动回忆 + 自评，进复习卡片 ——
+const cards = Object.assign(store.get('cards', {}), LW.cards);
+const savedCards = { ...LW.cards }, savingCards = new Set(), cardErrors = {};
+const note = document.getElementById('cards-note');
+const unsavedCards = () => Object.keys(cards).filter(id => cards[id] !== savedCards[id]);
+function showNote() {
+  const n = Object.keys(cards).length;
+  if (!online) {
+    note.innerHTML = !n ? '' : LW.api ? `<a href="${LW.loginUrl}">登录</a>后，可将这台设备上的 ${n} 张卡片同步到复习队列。` : `已有 ${n} 张卡片（正式版按遗忘曲线排期提醒）`;
+    return;
+  }
+  const pending = unsavedCards(), saved = Object.keys(savedCards).length;
+  note.innerHTML = `${saved ? `已有 ${saved} 张卡片进入<a href="/review">复习队列</a>。` : ''}${savingCards.size ? '正在保存，请稍候。' : pending.length ? `还有 ${pending.length} 张本机记录未同步。<button class="btn ghost" type="button" id="cards-sync">${Object.keys(cardErrors).length ? '重试保存' : '同步到复习队列'}</button>` : saved ? '会按遗忘曲线安排复习。' : ''}${Object.keys(cardErrors).length ? `<br><span style="color:var(--bad)">保存失败：${esc(Object.values(cardErrors)[0])}。本机记录已保留，可以重试。</span>` : ''}`;
+  document.getElementById('cards-sync')?.addEventListener('click', () => Promise.all(unsavedCards().map(saveCard)));
+}
+async function saveCard(id) {
+  if (!online || savingCards.has(id)) return;
+  const rating = cards[id];
+  savingCards.add(id); delete cardErrors[id]; showNote();
+  try {
+    await api(`/api/pages/${LW.pageId}/cards`, { idx: id, rating });
+    savedCards[id] = rating;
+    if (Object.keys(savedCards).length >= P.chunks.length * 2) markDone('learn');
+  } catch (x) { cardErrors[id] = x.message; }
+  finally { savingCards.delete(id); showNote(); }
+}
+document.querySelectorAll('.rq').forEach(rq => {
+  const id = rq.dataset.card;
+  const sel = r => rq.querySelectorAll('.rate button').forEach(b => b.classList.toggle('sel', b.dataset.r === r));
+  if (cards[id]) { rq.classList.add('open'); sel(cards[id]); }
+  rq.onclick = e => {
+    if (e.target.dataset.act === 'show') { rq.classList.add('open'); e.target.remove(); }
+    const r = e.target.dataset.r;
+    if (r && !savingCards.has(id)) {
+      cards[id] = r; store.set('cards', cards); sel(r);
+      if (online) saveCard(id);
+      else { showNote(); if (Object.keys(cards).length >= P.chunks.length * 2) markDone('learn'); }
+    }
+  };
+});
+showNote();
+
+// —— 练习：揭晓答案 ——
+document.querySelectorAll('#practice [data-act="reveal"]').forEach(b => b.onclick = () => { b.closest('.pr').querySelector('.reveal').classList.add('open'); b.remove(); markDone('practice'); });
+
+// —— 闯关：一题一题，连对有连击 ——
+const box = document.getElementById('quiz-box');
+const KIND_T = { '本页': '本页', '前置': '前置知识', '迁移': '换个场景' };
+let qi = 0, res = [], streak = 0, quizAttempt = 0;
+function renderQ() {
+  const q = P.quiz[qi];
+  box.innerHTML = `<div class="quiz-top"><div class="dots">${P.quiz.map((_, i) => `<i class="${res[i] === true ? 'ok' : res[i] === false ? 'no' : i === qi ? 'now' : ''}"></i>`).join('')}</div><span class="streak">${streak >= 2 ? `连对 ${streak} 题 🔥` : ''}</span></div>
+    <div class="kicker"><span class="pill kind">${KIND_T[q.kind]}</span><span>第 ${qi + 1} / ${P.quiz.length} 题</span></div>${mcq(q, 'q')}`;
+  const opts = box.querySelector('.opts'), fbw = box.querySelector('.fbw');
+  opts.onclick = e => {
+    const b = e.target.closest('.opt'); if (!b || b.disabled) return;
+    const pick = +b.dataset.i, ok = pick === q.answer;
+    res[qi] = ok; streak = ok ? streak + 1 : 0;
+    opts.querySelectorAll('.opt').forEach(x => { x.disabled = true; const i = +x.dataset.i; if (i === q.answer) x.classList.add('right'); else if (i === pick) x.classList.add('wrong'); });
+    fbw.innerHTML = `<div class="fb ${ok ? 'ok' : 'no'}">${ok ? '答对了。' : '不对。'}${md(q.why)}${ok ? '' : ` <a href="#chunk-${q.chunk}">回看第 ${q.chunk} 块</a>`}</div>
+      <div class="row" style="margin-top:10px;justify-content:flex-end"><button class="btn" type="button" id="qn">${qi + 1 < P.quiz.length ? '下一题' : '看结果'}</button></div>`;
+    box.querySelector('.streak').textContent = streak >= 2 ? `连对 ${streak} 题 🔥` : '';
+    document.getElementById('qn').onclick = () => { qi++; qi < P.quiz.length ? renderQ() : finish(); };
+  };
+}
+function finish() {
+  const n = res.filter(Boolean).length, pass = n >= 6, attempt = ++quizAttempt;
+  store.set('quiz', n); markDone('quiz');
+  const pr = P.predict.map((q, i) => `<div style="margin-bottom:10px"><p class="q" style="font-weight:500">${md(q.q)}</p><div class="fb ${preds[i] === q.answer ? 'ok' : ''}">你猜的是 ${preds[i] != null ? String.fromCharCode(65 + preds[i]) : '（没猜）'}，答案是 ${String.fromCharCode(65 + q.answer)}。${md(q.why)}</div></div>`).join('');
+  box.innerHTML = `<div class="result"><div class="big">${n} / ${P.quiz.length}</div><p>${pass ? online ? '及格！正在保存成绩…' : `及格！「${esc(cur)}」在本页地图上点亮了。` : '差一点。回看答错题对应的知识块，再来一次。'}</p>
+    <div class="row" style="justify-content:center"><button class="btn ghost" type="button" id="qr">再闯一次</button>${pass ? '<a class="btn" href="#map" style="text-decoration:none">去看地图</a>' : ''}</div></div>
+    <div class="pred-review"><div class="kicker">揭晓：你开头的猜测</div>${pr}</div>`;
+  const resultEl = box.querySelector('.result');
+  document.getElementById('qr').onclick = () => { quizAttempt++; qi = 0; res = []; streak = 0; renderQ(); };
+  if (pass && !online) light();
+  if (online) {
+    resultEl.insertAdjacentHTML('beforeend', '<div class="progress-save" style="margin-top:12px" aria-live="polite"></div>');
+    const statusEl = resultEl.querySelector('.progress-save');
+    const current = () => attempt === quizAttempt && resultEl.isConnected;
+    async function saveProgress() {
+      statusEl.innerHTML = '<span class="muted">正在保存成绩…</span>';
+      try {
+        const j = await api(`/api/pages/${LW.pageId}/progress`, { score: n });
+        if (!current()) return;
+        if (pass) { light(); resultEl.querySelector('p').textContent = `及格！「${cur}」在地图上点亮了。`; }
+        statusEl.innerHTML = `<span class="muted">成绩已保存。</span>${j.next ? `<div class="next-box"><span class="muted" style="font-size:14px">下一步</span><br><a class="btn" href="${j.next.url}?level=${encodeURIComponent(C.level)}" style="text-decoration:none;margin-top:6px">学「${esc(j.next.name)}」</a> <a href="${LW.domainUrl}" style="margin-left:8px;font-size:14px">看地图</a></div>` : ''}`;
+      } catch (x) {
+        if (!current()) return;
+        if (pass) resultEl.querySelector('p').textContent = '及格！成绩尚未保存到账号。';
+        statusEl.innerHTML = `<p style="color:var(--bad)">保存失败：${esc(x.message)}。可重试，无需重新闯关。</p><button class="btn ghost" type="button">重试保存成绩</button>`;
+        statusEl.querySelector('button').onclick = saveProgress;
+      }
+    }
+    saveProgress();
+  } else if (LW.api) resultEl.insertAdjacentHTML('beforeend', `<p class="muted" style="font-size:14px">本次结果保存在这台设备上。<a href="${LW.loginUrl}">登录</a>后重新闯关，可保存到账号；回忆卡片可直接同步。</p>`);
+}
+function light() { store.set('lit', true); document.querySelector('.node.cur')?.classList.add('lit'); }
+if (LW.lit || (!LW.api && store.get('lit', false))) document.querySelector('.node.cur')?.classList.add('lit');
+renderQ();
+
+// —— 费曼：自查 ——
+const fey = document.getElementById('fey');
+fey.value = store.get('feynman', '');
+fey.oninput = () => store.set('feynman', fey.value);
+document.getElementById('fey-self').onclick = () => { document.getElementById('fey-check').style.display = 'block'; markDone('feynman'); };
+
+document.getElementById('fey-ai').onclick = async e => {
+  const b = e.target, out = document.getElementById('fey-out');
+  if (!LW.loggedIn) { location.href = LW.loginUrl; return; }
+  b.disabled = true; b.textContent = 'AI 老师在看…'; out.innerHTML = '';
+  try {
+    const j = await api(`/api/pages/${LW.pageId}/feynman`, { text: fey.value });
+    const T = { covered: '讲到了', partial: '不完整', missed: '没讲到' };
+    out.innerHTML = `<div class="card" style="margin-top:12px;background:var(--bg)"><div class="row" style="justify-content:space-between"><b>AI 老师的反馈</b><span style="font:700 22px var(--f-display);color:var(--accent)">${+j.score || 0} 分</span></div>
+      <p style="margin:6px 0 10px">${esc(j.feedback)}</p>${(j.points || []).map(p => `<div class="pt"><span class="s ${esc(p.status)}">${T[p.status] || ''}</span><span>${esc(p.point)}${p.comment ? `<br><span class="muted" style="font-size:13px">${esc(p.comment)}</span>` : ''}</span></div>`).join('')}
+      ${(j.errors || []).length ? `<p style="margin:10px 0 0;color:var(--bad)"><b>讲错的地方：</b></p><ul style="margin:4px 0 0">${j.errors.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>`;
+    markDone('feynman');
+  } catch (x) { out.innerHTML = `<p style="color:var(--bad)">${esc(x.message)}</p>`; }
+  b.disabled = false; b.textContent = '再讲一遍，重新打分';
+};
+
+const chat = document.getElementById('chat'), hist = [];
+async function ask(q) {
+  if (!LW.loggedIn) { location.href = LW.loginUrl; return; }
+  q = q.trim(); if (!q) return;
+  hist.push({ role: 'user', content: q });
+  chat.insertAdjacentHTML('beforeend', `<div class="msg u">${esc(q)}</div><div class="msg a muted" id="typing">……</div>`);
+  chat.scrollTop = chat.scrollHeight;
+  try {
+    const j = await api(`/api/pages/${LW.pageId}/tutor`, { messages: hist });
+    hist.push({ role: 'assistant', content: j.reply });
+    document.getElementById('typing').outerHTML = `<div class="msg a">${md(j.reply)}</div>`;
+  } catch (x) { hist.pop(); document.getElementById('typing').outerHTML = `<div class="msg a" style="color:var(--bad)">${esc(x.message)}</div>`; }
+  chat.scrollTop = chat.scrollHeight;
+}
+if (LW.api) {
+  document.querySelectorAll('#starters .opt').forEach(b => b.onclick = () => ask(b.textContent));
+  const f = document.getElementById('ask'), qa = document.getElementById('askq');
+  f.onsubmit = e => { e.preventDefault(); const q = qa.value; qa.value = ''; ask(q); };
+  qa.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); f.requestSubmit(); } };
+  document.getElementById('fb-open').onclick = e => { e.preventDefault(); document.getElementById('fb-box').style.display = 'block'; };
+  document.getElementById('fb-send').onclick = async () => {
+    const m = document.getElementById('fb-msg');
+    try { await api(`/api/pages/${LW.pageId}/feedback`, { text: document.getElementById('fb-text').value }); m.textContent = '收到了，谢谢！'; document.getElementById('fb-text').value = ''; }
+    catch (x) { m.textContent = x.message; }
+  };
+}
+
+const tr = document.getElementById('tr');
+const saved = store.get('transfer', null); if (saved != null) tr.value = saved;
+tr.oninput = () => { store.set('transfer', tr.value); markDone('transfer'); };
+})();
+</script>
+</body>
+</html>

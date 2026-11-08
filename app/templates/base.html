@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}LearnWise · 想学什么都可以{% endblock %}</title>
+<meta name="description" content="{% block desc %}输入想学的任何领域，LearnWise 先画出知识地图、判断你的水平，再为每个知识点生成一页 30 分钟就能学完、学了记得住的学习页。{% endblock %}">
+<link rel="stylesheet" href="/static/site.css?v=1">
+{% block head %}{% endblock %}
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <a class="brand" href="/">Learn<b>Wise</b></a>
+  <a class="nav" href="/graph">星图</a>
+  <a class="nav hide-m" href="/about">关于</a>
+  {% if user %}
+    <a class="nav" href="/review">复习{% if due %} <span class="badge">{{ due }}</span>{% endif %}</a>
+    {% if user.is_admin %}<a class="nav" href="/admin">后台</a>{% endif %}
+    <a class="nav" href="#" onclick="fetch('/api/logout',{method:'POST'}).then(()=>location.href='/');return false" title="{{ user.email }}">退出</a>
+  {% else %}
+    <a class="btn ghost" style="padding:4px 14px;font-size:14px" href="/login?next={{ request.url.path|urlencode }}{% if request.url.query %}%3F{{ request.url.query|urlencode }}{% endif %}">登录</a>
+  {% endif %}
+</div></header>
+<main class="{% block mainclass %}{% endblock %}">
+{% block body %}{% endblock %}
+</main>
+<footer class="foot">LearnWise · Waywise 出品 · {{ MODEL_DISCLOSURE }}，可能有错误，仅供学习参考<br>
+<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">沪ICP备2025127932号</a></footer>
+<script>
+async function api(url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(location.pathname + location.search); throw new Error('请先登录'); }
+  if (!r.ok) throw new Error(j.error || '出错了，请稍后再试');
+  return j;
+}
+</script>
+{% block script %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ d.name }} 水平诊断 · LearnWise{% endblock %}
+{% block mainclass %}narrow{% endblock %}
+{% block head %}<style>
+.opts{display:grid;gap:8px;margin:12px 0}
+.opt{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 14px;cursor:pointer;line-height:1.6;white-space:pre-wrap}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.idk{color:var(--muted);border-style:dashed}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.bar{height:4px;background:var(--line);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.rv{border-top:1px dashed var(--line);padding:12px 0}
+.rv .why{font-size:14px;color:var(--muted)}
+</style>{% endblock %}
+{% block body %}
+<div class="small muted"><a href="/d/{{ d.id }}" style="color:inherit">← {{ d.name }}</a></div>
+<h1 style="font-size:26px;margin:4px 0 4px">水平诊断</h1>
+<p class="muted small" style="margin:0 0 14px">{{ qs|length }} 道题，从入门到深入。不会就选“我不知道”，别蒙——蒙对了反而会让你跳过该学的内容。</p>
+<div class="card" id="box"></div>
+{% endblock %}
+{% block script %}<script>
+const QS = {{ qs|tojson }}, STAGES = {{ STAGES|tojson }};
+const box = document.getElementById('box'), answers = [];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function show(i) {
+  const q = QS[i];
+  box.innerHTML = `<div class="bar"><i style="width:${i / QS.length * 100}%"></i></div>
+    <div class="small muted">第 ${i + 1} / ${QS.length} 题 · ${STAGES[q.stage]}</div>
+    <p style="font-weight:600;margin:6px 0 0;white-space:pre-wrap">${esc(q.q)}</p>
+    <div class="opts">${q.options.map((o, j) => `<button class="opt" data-i="${j}">${String.fromCharCode(65 + j)}. ${esc(o)}</button>`).join('')}
+    <button class="opt idk" data-i="-1">我不知道</button></div>`;
+  box.querySelectorAll('.opt').forEach(b => b.onclick = () => { answers[i] = +b.dataset.i; i + 1 < QS.length ? show(i + 1) : submit(); });
+}
+async function submit() {
+  box.innerHTML = '<div class="spinner"></div>';
+  try {
+    const r = await api('/api/domains/{{ d.id }}/diagnose', { answers });
+    box.innerHTML = `<div style="text-align:center"><div class="small muted">你的水平</div><div style="font:700 34px var(--f-display);color:var(--accent)">${esc(r.label)}</div>
+      <p>接下来的学习页会按「${esc(r.tier)}」档生成。答对的 ${r.known} 个知识点已在地图上标为“已会”。</p>
+      <a class="btn" href="/d/{{ d.id }}">回到地图，开始学</a></div>
+      <h3 style="font-size:17px;margin:24px 0 4px">逐题回看</h3>
+      ${r.review.map(q => `<div class="rv"><div class="small muted">${esc(q.node)}</div><p style="margin:2px 0 6px;font-weight:600;white-space:pre-wrap">${esc(q.q)}</p>
+        <div class="opts" style="margin:6px 0">${q.options.map((o, j) => `<div class="opt ${j === q.answer ? 'right' : j === q.pick ? 'wrong' : ''}">${String.fromCharCode(65 + j)}. ${esc(o)}</div>`).join('')}</div>
+        <div class="why">${q.pick === -1 ? '你选了“我不知道”。' : ''}${esc(q.why)}</div></div>`).join('')}`;
+  } catch (x) {
+    box.innerHTML = `<p class="err">${esc(x.message)}</p><p class="muted small">答案仍然保留，可以直接再次提交。</p><button class="btn" id="resubmit" type="button">再次提交</button>`;
+    document.getElementById('resubmit').onclick = submit;
+  }
+}
+show(0);
+</script>{% endblock %}
